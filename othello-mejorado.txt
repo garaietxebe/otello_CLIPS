@@ -1,6 +1,12 @@
-; Othello - Implementación básica
-; Autores: [Tu nombre]
-; Fecha: 30/04/2025
+; Othello jokoa
+; Autores: Garai eta Urdax
+; Data: 30/04/2025 - 
+
+
+;Exekuzioa VSC(Urdax):
+:C:\Users\urdax\Desktop
+;.\CLIPSIDE.exe 
+;(load "C:\\Users\\urdax\\Downloads\\AA\\PROIEKTUA\\othello-mejorado.txt")
 
 ; Definición de plantillas
 
@@ -124,3 +130,5 @@
 
 ; Iniciar el juego
 (iniciar-juego)
+
+
