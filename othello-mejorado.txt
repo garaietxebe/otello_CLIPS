@@ -153,22 +153,23 @@
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
 
-; Tablero barruan?
+;  1.Tablero barruan?
    (if(not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
        then
-   (printout t "Tablero barruan izan behar da! (8x8)" crlf))
+   (printout t "Tablero barruan izan behar da! (8x8)" crlf)
+   (return FALSE))
 
    ; 2. Jokalaria negro edo blanco
    (if (not (or (eq ?estado negra) (eq ?estado blanca)))
        then
        (printout t "Error: Jokalaria ez da zuzena. Solo 'negra' o 'blanca'." crlf)
-       return FALSE
-   )
+      (return FALSE))
+
    ; 3. ¿La casilla objetivo está vacía?
    (if (okupatuta_dago ?fila ?columna)  ; Verifica si ya hay una ficha (no vacía)
        then
        (printout t "Error: Okututa dago (" ?fila "," ?columna ")." crlf)
-       return FALSE
+     (return FALSE)git 
    )
    ; --- Othello rules ---
    ; 4. ¿La jugada flanquea al menos una ficha del oponente?Not done
@@ -177,7 +178,7 @@
    (assert (casilla (fila ?fila) (columna ?columna) (estado ?estado)))
    (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
    ; Llamar a la función mostrar existente
-  ; Forzar la visualización del tablero
+   ;Forzar la visualización del tablero
    (assert (visualizar (mostrar si)))
    (run) ; Ejecutar las reglas para mostrar el tablero
    (return TRUE)
