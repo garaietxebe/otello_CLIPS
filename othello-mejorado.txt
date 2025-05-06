@@ -128,7 +128,21 @@
    (assert (visualizar (mostrar si)))
    (run))
 
-; Iniciar el juego
+
+
+(deffunction anadir-pieza (?fila ?columna ?estado)
+   (if (and (>= ?fila 1) (>= ?columna 1))  ; Verifica que las coordenadas sean válidas
+       then
+       ; Buscar si ya existe una casilla en esa posición y retirarla
+       (do-for-all-facts ((?c casilla)) (and (eq ?c:fila ?fila) (eq ?c:columna ?columna))
+          (retract ?c))
+       ; Añadir la nueva casilla con el estado especificado
+       (assert (casilla (fila ?fila) (columna ?columna) (estado ?estado)))
+       (printout t "Pieza añadida en (" ?fila ", " ?columna ") con estado: " ?estado crlf)
+       ; Llamar a la función mostrar existente
+       (mostrar)
+       else
+       (printout t "Coordenadas inválidas. Asegúrate de que fila y columna sean mayores o iguales a 1." crlf)))
+
+; Iniciar el juego ()
 (iniciar-juego)
-
-
