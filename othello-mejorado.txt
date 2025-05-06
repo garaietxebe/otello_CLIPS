@@ -1,10 +1,10 @@
 ; Othello jokoa
 ; Autores: Garai eta Urdax
-; Data: 30/04/2025 - 
+; Data: 30/04/2025 - ...
 
 
 ;Exekuzioa VSC(Urdax):
-:C:\Users\urdax\Desktop
+:C:\Users\urdax\Desktop      ->Warning emateu
 ;.\CLIPSIDE.exe 
 ;(load "C:\\Users\\urdax\\Downloads\\AA\\PROIEKTUA\\othello-mejorado.txt")
 
@@ -128,21 +128,58 @@
    (assert (visualizar (mostrar si)))
    (run))
 
+ ;okupatuta_dago
+
+   (deffunction okupatuta_dago (?fila ?columna)
+   ; TRUE okupauta
+   ; FALSE hutsa
+   
+   ; Bilatu
+   (bind ?casillas (find-fact ((?c casilla)) 
+                              (and (eq ?c:fila ?fila) 
+                                   (eq ?c:columna ?columna))))
+   
+   (bind ?casilla (nth$ 1 ?casillas))
+   (bind ?estado (fact-slot-value ?casilla estado))
+   
+   (if (eq ?estado vacia)
+       then
+       (return FALSE)  ; No está ocupada
+       else
+       (return TRUE)   ; Está ocupada (negra o blanca)
+   )
+)
 
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
-   (if (and (>= ?fila 1) (>= ?columna 1))  ; Verifica que las coordenadas sean válidas
-       then
-       ; Buscar si ya existe una casilla en esa posición y retirarla
-       (do-for-all-facts ((?c casilla)) (and (eq ?c:fila ?fila) (eq ?c:columna ?columna))
-          (retract ?c))
-       ; Añadir la nueva casilla con el estado especificado
-       (assert (casilla (fila ?fila) (columna ?columna) (estado ?estado)))
-       (printout t "Pieza añadida en (" ?fila ", " ?columna ") con estado: " ?estado crlf)
-       ; Llamar a la función mostrar existente
-       (mostrar)
-       else
-       (printout t "Coordenadas inválidas. Asegúrate de que fila y columna sean mayores o iguales a 1." crlf)))
 
-; Iniciar el juego ()
-(iniciar-juego)
+; Tablero barruan?
+   (if(not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
+       then
+   (printout t "Tablero barruan izan behar da! (8x8)" crlf))
+
+   ; 2. Jokalaria negro edo blanco
+   (if (not (or (eq ?estado negra) (eq ?estado blanca)))
+       then
+       (printout t "Error: Jokalaria ez da zuzena. Solo 'negra' o 'blanca'." crlf)
+       return FALSE
+   )
+   ; 3. ¿La casilla objetivo está vacía?
+   (if (okupatuta_dago ?fila ?columna)  ; Verifica si ya hay una ficha (no vacía)
+       then
+       (printout t "Error: Okututa dago (" ?fila "," ?columna ")." crlf)
+       return FALSE
+   )
+   ; --- Othello rules ---
+   ; 4. ¿La jugada flanquea al menos una ficha del oponente?Not done
+
+   ; Añadir la nueva casilla con el estado especificado
+   (assert (casilla (fila ?fila) (columna ?columna) (estado ?estado)))
+   (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
+   ; Llamar a la función mostrar existente
+  ; Forzar la visualización del tablero
+   (assert (visualizar (mostrar si)))
+   (run) ; Ejecutar las reglas para mostrar el tablero
+   (return TRUE)
+
+)
