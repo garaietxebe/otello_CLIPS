@@ -90,7 +90,7 @@
 (defrule mostrar-tablero
    (declare (salience -100))
    (tablero (dimension ?dim) (turno ?turno))
-   (visualizar (mostrar si))  ; Solo mostrar cuando se active la visualización
+      ?v <- (visualizar (mostrar si))
    =>
    (printout t crlf)
    (printout t "Estado del tablero:" crlf)
@@ -109,7 +109,8 @@
                    then (printout t "N ")
                    else (printout t "B "))))
       (printout t crlf))
-   (printout t crlf))
+   (printout t crlf)
+   (retract ?v))
 
 ; Regla para mostrar mensajes
 (defrule mostrar-mensaje
@@ -174,13 +175,17 @@
    ; --- Othello rules ---
    ; 4. ¿La jugada flanquea al menos una ficha del oponente?Not done
 
-   ; Añadir la nueva casilla con el estado especificado
-   (assert (casilla (fila ?fila) (columna ?columna) (estado ?estado)))
+
+   ; Dauan fact-a aldatu
+   (bind ?c (nth$ 1 (find-fact ((?c casilla))
+                            (and (eq ?c:fila ?fila)
+                                 (eq ?c:columna ?columna)))))
+   (modify ?c (estado ?estado))
    (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
-   ; Llamar a la función mostrar existente
-   ;Forzar la visualización del tablero
-   (assert (visualizar (mostrar si)))
-   (run) ; Ejecutar las reglas para mostrar el tablero
+
+   ; Tablerua erakutsi
+   (mostrar)
    (return TRUE)
+
 
 )
