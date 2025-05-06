@@ -1,0 +1,126 @@
+; Othello - Implementación básica
+; Autores: [Tu nombre]
+; Fecha: 30/04/2025
+
+; Definición de plantillas
+
+; Plantilla para representar el tablero
+(deftemplate tablero
+   (slot dimension (type INTEGER) (default 8))
+   (slot turno (type SYMBOL) (allowed-values negro blanco) (default negro)))
+
+; Plantilla para representar una casilla del tablero
+(deftemplate casilla
+   (slot fila (type INTEGER))
+   (slot columna (type INTEGER))
+   (slot estado (type SYMBOL) (allowed-values vacia negra blanca) (default vacia)))
+
+; Plantilla para representar la cantidad de fichas disponibles de cada jugador
+(deftemplate fichas-disponibles
+   (slot jugador (type SYMBOL) (allowed-values negro blanco))
+   (slot cantidad (type INTEGER) (default 30)))
+
+; Plantilla para mostrar mensajes al usuario
+(deftemplate mensaje
+   (slot texto (type STRING)))
+
+; Plantilla para controlar la visualización del tablero
+(deftemplate visualizar
+   (slot mostrar (type SYMBOL) (allowed-values si no) (default no)))
+
+; Reglas del juego
+
+; Regla para inicializar el tablero
+(defrule inicializar-tablero
+   (declare (salience 100))
+   (not (tablero))
+   =>
+   (assert (tablero))
+   (assert (mensaje (texto "Tablero inicializado. Dimension: 8x8"))))
+
+; Regla para inicializar las fichas disponibles
+(defrule inicializar-fichas
+   (declare (salience 99))
+   (not (fichas-disponibles (jugador negro)))
+   (not (fichas-disponibles (jugador blanco)))
+   =>
+   (assert (fichas-disponibles (jugador negro) (cantidad 30)))
+   (assert (fichas-disponibles (jugador blanco) (cantidad 30)))
+   (assert (mensaje (texto "Fichas inicializadas. Cada jugador tiene 30 fichas disponibles."))))
+
+; Regla para crear casillas vacías
+(defrule crear-casillas-vacias
+   (declare (salience 98))
+   (tablero (dimension ?dim))
+   (not (casilla (fila 1) (columna 1)))
+   =>
+   (loop-for-count (?i 1 ?dim) do
+      (loop-for-count (?j 1 ?dim) do
+         (assert (casilla (fila ?i) (columna ?j) (estado vacia))))))
+
+; Regla para colocar las fichas iniciales en el centro del tablero
+(defrule colocar-fichas-iniciales
+   (declare (salience 97))
+   ?t <- (tablero (dimension ?dim))
+   ?c1 <- (casilla (fila ?mid) (columna ?mid) (estado vacia))
+   ?c2 <- (casilla (fila ?mid) (columna ?mid2) (estado vacia))
+   ?c3 <- (casilla (fila ?mid2) (columna ?mid) (estado vacia))
+   ?c4 <- (casilla (fila ?mid2) (columna ?mid2) (estado vacia))
+   ?f1 <- (fichas-disponibles (jugador negro) (cantidad ?cant-negro))
+   ?f2 <- (fichas-disponibles (jugador blanco) (cantidad ?cant-blanco))
+   (test (= ?mid (/ ?dim 2)))
+   (test (= ?mid2 (+ ?mid 1)))
+   =>
+   (modify ?c1 (estado blanca))
+   (modify ?c2 (estado negra))
+   (modify ?c3 (estado negra))
+   (modify ?c4 (estado blanca))
+   (modify ?f1 (cantidad (- ?cant-negro 2)))
+   (modify ?f2 (cantidad (- ?cant-blanco 2)))
+   (assert (mensaje (texto "Fichas iniciales colocadas en el tablero.")))
+   (assert (visualizar (mostrar si))))  ; Activar la visualización del tablero después de colocar las fichas iniciales
+
+; Regla para mostrar el estado del tablero
+(defrule mostrar-tablero
+   (declare (salience -100))
+   (tablero (dimension ?dim) (turno ?turno))
+   (visualizar (mostrar si))  ; Solo mostrar cuando se active la visualización
+   =>
+   (printout t crlf)
+   (printout t "Estado del tablero:" crlf)
+   (printout t "Turno: " ?turno crlf)
+   (printout t "  ")
+   (loop-for-count (?j 1 ?dim) do
+      (printout t ?j " "))
+   (printout t crlf)
+   (loop-for-count (?i 1 ?dim) do
+      (printout t ?i " ")
+      (loop-for-count (?j 1 ?dim) do
+         (bind ?estado (fact-slot-value (nth$ 1 (find-fact ((?c casilla)) (and (eq ?c:fila ?i) (eq ?c:columna ?j)))) estado))
+         (if (eq ?estado vacia)
+             then (printout t "· ")
+             else (if (eq ?estado negra)
+                   then (printout t "N ")
+                   else (printout t "B "))))
+      (printout t crlf))
+   (printout t crlf))
+
+; Regla para mostrar mensajes
+(defrule mostrar-mensaje
+   ?m <- (mensaje (texto ?texto))
+   =>
+   (printout t ?texto crlf)
+   (retract ?m))
+
+; Función para iniciar el juego
+(deffunction iniciar-juego ()
+   (reset)
+   (run))
+
+; Función para mostrar el tablero manualmente
+(deffunction mostrar ()
+   (assert (visualizar (mostrar si)))
+   (run))
+
+; Iniciar el juego
+(iniciar-juego)
