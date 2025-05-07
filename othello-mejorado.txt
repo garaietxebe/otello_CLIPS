@@ -15,6 +15,8 @@
    (slot dimension (type INTEGER) (default 8))
    (slot turno (type SYMBOL) (allowed-values negro blanco) (default negro)))
 
+
+
 ; Plantilla para representar una casilla del tablero
 (deftemplate casilla
    (slot fila (type INTEGER))
@@ -151,6 +153,15 @@
    )
 )
 
+(deffunction get-current-turn ()
+   (bind ?tablero-fact (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+   (if (neq ?tablero-fact nil) then
+      (bind ?current-turn (fact-slot-value ?tablero-fact turno))
+      (return ?current-turn)
+    else
+      (printout t "Error: No tablero fact found." crlf)
+      (return nil)))
+
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
 
@@ -172,7 +183,16 @@
        (printout t "Error: Okututa dago (" ?fila "," ?columna ")." crlf)
      (return FALSE)git 
    )
-   
+   (bind ?tablero-fact (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+   (if (neq ?tablero-fact nil) then
+      (bind ?current-turn (fact-slot-value ?tablero-fact turno))
+      (if (not (eq ?current-turn ?estado))
+         then
+         (printout t "Error: Invalid estado for the current turn: " ?current-turn crlf)
+      )
+    else
+      (printout t "Error: No tablero fact found." crlf)
+      (return nil)))
 
    ; --- Othello rules ---
    ; 4. ¿La jugada flanquea al menos una ficha del oponente?
@@ -228,6 +248,9 @@
                                  (eq ?c:columna ?columna)))))
    (modify ?c (estado ?estado))
    (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
+
+   (modify ?tablero-fact (turno (if (eq ?current-turn negro) then blanco else negro)))
+   (printout t "Turn switched to: " (if (eq ?current-turn negro) then "blanco" else "negro") crlf)
 
    ; Tablerua erakutsi
    (mostrar)
