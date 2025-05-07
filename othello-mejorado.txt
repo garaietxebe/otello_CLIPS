@@ -3,19 +3,12 @@
 ; Data: 30/04/2025 - ...
 
 
-;Exekuzioa VSC(Urdax):
-:C:\Users\urdax\Desktop      ->Warning emateu
-;.\CLIPSIDE.exe 
-;(load "C:\\Users\\urdax\\Downloads\\AA\\PROIEKTUA\\othello-mejorado.txt")
-
 ; Definición de plantillas
 
 ; Plantilla para representar el tablero
 (deftemplate tablero
    (slot dimension (type INTEGER) (default 8))
    (slot turno (type SYMBOL) (allowed-values negro blanco) (default negro)))
-
-
 
 ; Plantilla para representar una casilla del tablero
 (deftemplate casilla
@@ -153,110 +146,165 @@
    )
 )
 
-(deffunction get-current-turn ()
-   (bind ?tablero-fact (nth$ 1 (find-fact ((?t tablero)) TRUE)))
-   (if (neq ?tablero-fact nil) then
-      (bind ?current-turn (fact-slot-value ?tablero-fact turno))
-      (return ?current-turn)
-    else
-      (printout t "Error: No tablero fact found." crlf)
-      (return nil)))
 
 
-(deffunction anadir-pieza (?fila ?columna ?estado)
-
-;  1.Tablero barruan?
-   (if(not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
+(deffunction mugimendu_egokia (?fila ?columna ?estado)
+   ;  1. ¿Está dentro del tablero?
+   (if (not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
        then
-   (printout t "Dumb ahh the table is 8x8 ong" crlf)
-   (return FALSE))
-
-   ; 2. Jokalaria negro edo blanco
-   (if (not (or (eq ?estado negra) (eq ?estado blanca)))
-       then
-       (printout t "Error: Jokalaria ez da zuzena. Solo 'negra' o 'blanca'." crlf)
-      (return FALSE))
-
-   ; 3. ¿La casilla objetivo está vacía?
-   (if (okupatuta_dago ?fila ?columna)  ; Verifica si ya hay una ficha (no vacía)
-       then
-       (printout t "Error: Okututa dago (" ?fila "," ?columna ")." crlf)
-     (return FALSE)git 
-   )
-   (bind ?tablero-fact (nth$ 1 (find-fact ((?t tablero)) TRUE)))
-   (if (neq ?tablero-fact nil) then
-      (bind ?current-turn (fact-slot-value ?tablero-fact turno))
-      (if (not (eq ?current-turn ?estado))
-         then
-         (printout t "Error: Invalid estado for the current turn: " ?current-turn crlf)
-      )
-    else
-      (printout t "Error: No tablero fact found." crlf)
-      (return nil)))
-
-   ; --- Othello rules ---
-   ; 4. ¿La jugada flanquea al menos una ficha del oponente?
-   (bind ?opposite (if (eq ?estado negra) then blanca else negra))
-   (bind ?found FALSE)
-   (loop-for-count (?dx -1 1) do
-   (loop-for-count (?dy -1 1) do
-      (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; Skip the current position
-               (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
-               (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
-          then
-          (bind ?x (+ ?fila ?dx))
-          (bind ?y (+ ?columna ?dy))
-          ; Find the first neighboring cell
-          (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                             (and (eq ?c:fila ?x)
-                                                  (eq ?c:columna ?y)))))
-          ; Check if the first neighboring piece is the opposite color
-          (if (eq (fact-slot-value ?neighbor estado) ?opposite)
-              then
-              ; Start traversing in this direction
-              (bind ?line-found FALSE)
-              (bind ?to-flip (create$))
-              (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
-                 (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                                    (and (eq ?c:fila ?x)
-                                                         (eq ?c:columna ?y)))))
-                 (if (eq (fact-slot-value ?neighbor estado) ?opposite)
-                     then
-                     (bind ?to-flip (create$ ?to-flip ?neighbor))
-                     (bind ?x (+ ?x ?dx))
-                     (bind ?y (+ ?y ?dy)))
-                 (if (eq (fact-slot-value ?neighbor estado) ?estado)
-                     then
-                     (bind ?line-found TRUE)
-                     (break))
-                 (if (eq (fact-slot-value ?neighbor estado) vacia)
-                     then
-                     (break)))
-              (if ?line-found
-                  then
-                  (bind ?found TRUE)
-                  (foreach ?piece ?to-flip
-                     (modify ?piece (estado ?estado))))))))
-   (if (not ?found)
-       then
-       (printout t "Error: Ez dago aurkako fitxarik inguruan (" ?fila "," ?columna ")." crlf)
+       (printout t "Error: Posición fuera del tablero (" ?fila "," ?columna ")." crlf)
        (return FALSE))
 
-   ; Aktualizatu gelaxka
-   (bind ?c (nth$ 1 (find-fact ((?c casilla))
-                            (and (eq ?c:fila ?fila)
-                                 (eq ?c:columna ?columna)))))
-   (modify ?c (estado ?estado))
-   (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
+   ; 2. ¿Color válido?
+   (if (not (or (eq ?estado negra) (eq ?estado blanca)))
+       then
+       (printout t "Error: Color no válido. Solo 'negra' o 'blanca'." crlf)
+       (return FALSE))
 
-   (modify ?tablero-fact (turno (if (eq ?current-turn negro) then blanco else negro)))
-   (printout t "Turn switched to: " (if (eq ?current-turn negro) then "blanco" else "negro") crlf)
-
-   ; Tablerua erakutsi
-   (mostrar)
-   (return TRUE)
-
-
+   ; 3. ¿Casilla vacía?
+   (if (okupatuta_dago ?fila ?columna)  ; Verifica si ya hay una ficha
+       then
+       (printout t "Error: Casilla ocupada (" ?fila "," ?columna ")." crlf)
+       (return FALSE))
+   
+   ; 4. ¿Flanquea al menos una ficha?
+   (bind ?opposite (if (eq ?estado negra) then blanca else negra))
+   (bind ?found FALSE)
+   
+   ; Verificar en las 8 direcciones
+   (loop-for-count (?dx -1 1) do
+      (loop-for-count (?dy -1 1) do
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; No es la propia casilla
+                  (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
+                  (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
+             then
+             (bind ?x (+ ?fila ?dx))
+             (bind ?y (+ ?columna ?dy))
+             ; Verificar casilla adyacente
+             (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                                (and (eq ?c:fila ?x)
+                                                     (eq ?c:columna ?y)))))
+             (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+                 then
+                 ; Seguir en esta dirección
+                 (bind ?x (+ ?x ?dx))
+                 (bind ?y (+ ?y ?dy))
+                 (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
+                    (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                                       (and (eq ?c:fila ?x)
+                                                            (eq ?c:columna ?y)))))
+                    (if (eq (fact-slot-value ?neighbor estado) ?estado)
+                        then
+                        (bind ?found TRUE)
+                        (break))
+                    (if (eq (fact-slot-value ?neighbor estado) vacia)
+                        then
+                        (break))
+                    ; Mover a siguiente casilla
+                    (bind ?x (+ ?x ?dx))
+                    (bind ?y (+ ?y ?dy))
+                 )
+             )
+         )
+      )
+   )
+   
+   (if (not ?found)
+       then
+       (printout t "Error: No hay fichas del oponente para flanquear (" ?fila "," ?columna ")." crlf))
+   
+   (return ?found)
 )
 
+(deffunction mostrar-movimientos-disponibles (?estado)
+   (printout t "Mugimendu posibleak " ?estado "entzat:" crlf)
+   (bind ?count 0)
+   
+   (loop-for-count (?fila 1 8) do
+      (loop-for-count (?columna 1 8) do
+         (if (and (not (okupatuta_dago ?fila ?columna))
+                 (mugimendu_egokia ?fila ?columna ?estado))
+             then
+             (printout t "(" ?fila "," ?columna ") ")
+             (bind ?count (+ ?count 1))
+         )
+      )
+   )
+   
+   (if (= ?count 0)
+       then (printout t "Ez dago mugimendu posibleik." crlf)
+       else (printout t crlf))
+   
+   (printout t "Guztira: " ?count " mugimendu" crlf )
+)
 
+(deffunction anadir-pieza (?fila ?columna ?estado)
+   (if (not (mugimendu_egokia ?fila ?columna ?estado))
+       then
+       (return FALSE))
+   
+   ; Colocar la ficha
+   (bind ?c (nth$ 1 (find-fact ((?c casilla))
+                           (and (eq ?c:fila ?fila)
+                                (eq ?c:columna ?columna)))))
+   (modify ?c (estado ?estado))
+   
+   ; Voltear las fichas del oponente
+   (bind ?opposite (if (eq ?estado negra) then blanca else negra))
+   (loop-for-count (?dx -1 1) do
+      (loop-for-count (?dy -1 1) do
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
+                  (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
+                  (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
+             then
+             (bind ?x (+ ?fila ?dx))
+             (bind ?y (+ ?columna ?dy))
+             (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                                (and (eq ?c:fila ?x)
+                                                     (eq ?c:columna ?y)))))
+             (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+                 then
+                 (bind ?to-flip (create$))
+                 (bind ?x (+ ?x ?dx))
+                 (bind ?y (+ ?y ?dy))
+                 (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
+                    (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                                       (and (eq ?c:fila ?x)
+                                                            (eq ?c:columna ?y)))))
+                    (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+                        then
+                        (bind ?to-flip (create$ ?to-flip ?neighbor))
+                        (bind ?x (+ ?x ?dx))
+                        (bind ?y (+ ?y ?dy))
+                        else
+                        (if (eq (fact-slot-value ?neighbor estado) ?estado)
+                            then
+                            (foreach ?piece ?to-flip
+                               (modify ?piece (estado ?estado)))
+                            (break))
+                        (if (eq (fact-slot-value ?neighbor estado) vacia)
+                            then
+                            (break))
+                    )
+                 )
+             )
+         )
+      )
+   )
+   
+   (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
+   (mostrar)
+
+   ; Mostrar movimientos del siguiente jugador
+   (if (eq ?estado negra)
+       then
+       (printout t crlf ">>> Turno de BLANCAS:" crlf)
+       (mostrar-movimientos-disponibles blanca)
+       else
+       (printout t crlf ">>> Turno de NEGRAS:" crlf)
+       (mostrar-movimientos-disponibles negra)
+   )
+
+(return TRUE)
+
+)
