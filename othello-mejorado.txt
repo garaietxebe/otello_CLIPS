@@ -151,25 +151,6 @@
    )
 )
 
-(deffunction okupatuta_dago_4_5 ()
-   ; Check if the slot (4, 5) is occupied
-   
-   ; Find the fact for the specific slot
-   (bind ?casillas (find-fact ((?c casilla)) 
-                              (and (eq ?c:fila 4) 
-                                   (eq ?c:columna 5))))
-   
-   (bind ?casilla (nth$ 1 ?casillas))
-   (bind ?estado (fact-slot-value ?casilla estado))
-   
-   (if (eq ?estado vacia)
-       then
-       (return FALSE)  ; Slot (4, 5) is not occupied
-       else
-       (return TRUE)   ; Slot (4, 5) is occupied (negra or blanca)
-   )
-)
-
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
 
@@ -191,6 +172,8 @@
        (printout t "Error: Okututa dago (" ?fila "," ?columna ")." crlf)
      (return FALSE)git 
    )
+   
+
    ; --- Othello rules ---
    ; 4. ¿La jugada flanquea al menos una ficha del oponente?
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
@@ -212,12 +195,14 @@
               then
               ; Start traversing in this direction
               (bind ?line-found FALSE)
+              (bind ?to-flip (create$))
               (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
                  (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
                                                     (and (eq ?c:fila ?x)
                                                          (eq ?c:columna ?y)))))
                  (if (eq (fact-slot-value ?neighbor estado) ?opposite)
                      then
+                     (bind ?to-flip (create$ ?to-flip ?neighbor))
                      (bind ?x (+ ?x ?dx))
                      (bind ?y (+ ?y ?dy)))
                  (if (eq (fact-slot-value ?neighbor estado) ?estado)
@@ -229,13 +214,15 @@
                      (break)))
               (if ?line-found
                   then
-                  (bind ?found TRUE))))))
+                  (bind ?found TRUE)
+                  (foreach ?piece ?to-flip
+                     (modify ?piece (estado ?estado))))))))
    (if (not ?found)
        then
        (printout t "Error: Ez dago aurkako fitxarik inguruan (" ?fila "," ?columna ")." crlf)
        (return FALSE))
 
-   ; Dauan fact-a aldatu
+   ; Aktualizatu gelaxka
    (bind ?c (nth$ 1 (find-fact ((?c casilla))
                             (and (eq ?c:fila ?fila)
                                  (eq ?c:columna ?columna)))))
