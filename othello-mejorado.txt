@@ -151,13 +151,32 @@
    )
 )
 
+(deffunction okupatuta_dago_4_5 ()
+   ; Check if the slot (4, 5) is occupied
+   
+   ; Find the fact for the specific slot
+   (bind ?casillas (find-fact ((?c casilla)) 
+                              (and (eq ?c:fila 4) 
+                                   (eq ?c:columna 5))))
+   
+   (bind ?casilla (nth$ 1 ?casillas))
+   (bind ?estado (fact-slot-value ?casilla estado))
+   
+   (if (eq ?estado vacia)
+       then
+       (return FALSE)  ; Slot (4, 5) is not occupied
+       else
+       (return TRUE)   ; Slot (4, 5) is occupied (negra or blanca)
+   )
+)
+
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
 
 ;  1.Tablero barruan?
    (if(not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
        then
-   (printout t "Tablero barruan izan behar da! (8x8)" crlf)
+   (printout t "Dumb ahh the table is 8x8 ong" crlf)
    (return FALSE))
 
    ; 2. Jokalaria negro edo blanco
@@ -173,8 +192,48 @@
      (return FALSE)git 
    )
    ; --- Othello rules ---
-   ; 4. ¿La jugada flanquea al menos una ficha del oponente?Not done
-
+   ; 4. ¿La jugada flanquea al menos una ficha del oponente?
+   (bind ?opposite (if (eq ?estado negra) then blanca else negra))
+   (bind ?found FALSE)
+   (loop-for-count (?dx -1 1) do
+   (loop-for-count (?dy -1 1) do
+      (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; Skip the current position
+               (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
+               (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
+          then
+          (bind ?x (+ ?fila ?dx))
+          (bind ?y (+ ?columna ?dy))
+          ; Find the first neighboring cell
+          (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                             (and (eq ?c:fila ?x)
+                                                  (eq ?c:columna ?y)))))
+          ; Check if the first neighboring piece is the opposite color
+          (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+              then
+              ; Start traversing in this direction
+              (bind ?line-found FALSE)
+              (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
+                 (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
+                                                    (and (eq ?c:fila ?x)
+                                                         (eq ?c:columna ?y)))))
+                 (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+                     then
+                     (bind ?x (+ ?x ?dx))
+                     (bind ?y (+ ?y ?dy)))
+                 (if (eq (fact-slot-value ?neighbor estado) ?estado)
+                     then
+                     (bind ?line-found TRUE)
+                     (break))
+                 (if (eq (fact-slot-value ?neighbor estado) vacia)
+                     then
+                     (break)))
+              (if ?line-found
+                  then
+                  (bind ?found TRUE))))))
+   (if (not ?found)
+       then
+       (printout t "Error: Ez dago aurkako fitxarik inguruan (" ?fila "," ?columna ")." crlf)
+       (return FALSE))
 
    ; Dauan fact-a aldatu
    (bind ?c (nth$ 1 (find-fact ((?c casilla))
@@ -189,3 +248,5 @@
 
 
 )
+
+
