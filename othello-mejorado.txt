@@ -147,73 +147,96 @@
 )
 
 
-
 (deffunction mugimendu_egokia (?fila ?columna ?estado)
-   ;  1. ¿Está dentro del tablero?
-   (if (not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
-       then
-       (printout t "Error: Posición fuera del tablero (" ?fila "," ?columna ")." crlf)
-       (return FALSE))
-
-   ; 2. ¿Color válido?
-   (if (not (or (eq ?estado negra) (eq ?estado blanca)))
-       then
-       (printout t "Error: Color no válido. Solo 'negra' o 'blanca'." crlf)
-       (return FALSE))
-
-   ; 3. ¿Casilla vacía?
-   (if (okupatuta_dago ?fila ?columna)  ; Verifica si ya hay una ficha
-       then
-       (printout t "Error: Casilla ocupada (" ?fila "," ?columna ")." crlf)
-       (return FALSE))
+   ; Versión de mugimendu_egokia sin mensajes de error
    
-   ; 4. ¿Flanquea al menos una ficha?
+   ; 1. ¿Está dentro del tablero?
+   (if (not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
+       then (return FALSE))
+
+   ; 2. ¿Casilla vacía?
+   (if (okupatuta_dago ?fila ?columna)
+       then (return FALSE))
+   
+   ; 3. ¿Flanquea al menos una ficha?
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
    (bind ?found FALSE)
    
    ; Verificar en las 8 direcciones
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
-         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; No es la propia casilla
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
                   (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
                   (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
              then
              (bind ?x (+ ?fila ?dx))
              (bind ?y (+ ?columna ?dy))
              ; Verificar casilla adyacente
-             (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                                (and (eq ?c:fila ?x)
-                                                     (eq ?c:columna ?y)))))
-             (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+             (bind ?casillas (find-fact ((?c casilla))
+                                      (and (eq ?c:fila ?x)
+                                           (eq ?c:columna ?y))))
+             
+             (if (and (> (length$ ?casillas) 0)
+                     (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
                  then
-                 ; Seguir en esta dirección
+                 ; Hay una ficha opuesta adyacente, ahora seguir en esta dirección
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
+                 
+                 ; Seguir buscando en esta dirección
                  (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
-                    (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                                       (and (eq ?c:fila ?x)
-                                                            (eq ?c:columna ?y)))))
-                    (if (eq (fact-slot-value ?neighbor estado) ?estado)
+                    (bind ?casillas (find-fact ((?c casilla))
+                                            (and (eq ?c:fila ?x)
+                                                 (eq ?c:columna ?y))))
+                    
+                    (if (> (length$ ?casillas) 0)
                         then
-                        (bind ?found TRUE)
-                        (break))
-                    (if (eq (fact-slot-value ?neighbor estado) vacia)
-                        then
-                        (break))
-                    ; Mover a siguiente casilla
-                    (bind ?x (+ ?x ?dx))
-                    (bind ?y (+ ?y ?dy))
+                        (bind ?estado-actual (fact-slot-value (nth$ 1 ?casillas) estado))
+                        (if (eq ?estado-actual ?estado)
+                            then
+                            ; Encontramos una ficha del mismo color, flanqueo verificado
+                            (bind ?found TRUE)
+                            (break))
+                        (if (eq ?estado-actual vacia)
+                            then
+                            ; Espacio vacío, no hay flanqueo
+                            (break))
+                        ; Si es una ficha opuesta, continuar buscando
+                        (bind ?x (+ ?x ?dx))
+                        (bind ?y (+ ?y ?dy)))
                  )
              )
          )
       )
    )
    
-   (if (not ?found)
-       then
-       (printout t "Error: No hay fichas del oponente para flanquear (" ?fila "," ?columna ")." crlf))
-   
    (return ?found)
+)
+
+(deffunction mostrar-movimientos-disponibles (?estado)
+   (printout t "Mugimendu posibleak " ?estado "entzat:" crlf)
+   (bind ?count 0)
+   (bind ?movimientos (create$))
+   
+   (loop-for-count (?fila 1 8) do
+      (loop-for-count (?columna 1 8) do
+         (if (and (not (okupatuta_dago ?fila ?columna))
+                 (mugimendu_egokia ?fila ?columna ?estado))
+             then
+             (bind ?movimientos (create$ ?movimientos (str-cat "(" ?fila "," ?columna ")")))
+             (bind ?count (+ ?count 1))
+         )
+      )
+   )
+   
+   (if (= ?count 0)
+       then (printout t "Ez dago mugimendu posibleik." crlf)
+       else 
+       (foreach ?mov ?movimientos
+          (printout t ?mov " "))
+       (printout t crlf))
+   
+   (printout t "Guztira: " ?count " mugimendu" crlf crlf)
 )
 
 (deffunction mostrar-movimientos-disponibles (?estado)
@@ -235,76 +258,128 @@
        then (printout t "Ez dago mugimendu posibleik." crlf)
        else (printout t crlf))
    
-   (printout t "Guztira: " ?count " mugimendu" crlf )
+   (printout t "Guztira: " ?count " mugimendu" crlf crlf)
 )
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
+   ; Verificar si el movimiento es válido
    (if (not (mugimendu_egokia ?fila ?columna ?estado))
        then
+       (printout t "Error: Movimiento no válido (" ?fila "," ?columna ")." crlf)
        (return FALSE))
    
-   ; Colocar la ficha
+   ; Colocar la nueva ficha
    (bind ?c (nth$ 1 (find-fact ((?c casilla))
                            (and (eq ?c:fila ?fila)
                                 (eq ?c:columna ?columna)))))
    (modify ?c (estado ?estado))
    
+   ; Actualizar el contador de fichas (reduzca las disponibles)
+   (bind ?f (nth$ 1 (find-fact ((?f fichas-disponibles)) (eq ?f:jugador (if (eq ?estado negra) then negro else blanco)))))
+   (if (> (fact-slot-value ?f cantidad) 0)
+       then
+       (modify ?f (cantidad (- (fact-slot-value ?f cantidad) 1))))
+   
    ; Voltear las fichas del oponente
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
+   (bind ?total-flipped 0)  ; Contador de fichas volteadas
+   
+   ; Verificar en las 8 direcciones
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
-         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; No es la propia casilla
                   (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
                   (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
              then
              (bind ?x (+ ?fila ?dx))
              (bind ?y (+ ?columna ?dy))
-             (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                                (and (eq ?c:fila ?x)
-                                                     (eq ?c:columna ?y)))))
-             (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+             
+             ; Verificar casilla adyacente
+             (bind ?casillas (find-fact ((?c casilla))
+                                      (and (eq ?c:fila ?x)
+                                           (eq ?c:columna ?y))))
+             
+             (if (and (> (length$ ?casillas) 0)
+                     (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
                  then
+                 ; Hay una ficha opuesta adyacente, recopilar todas las fichas a voltear
                  (bind ?to-flip (create$))
+                 (bind ?to-flip (create$ ?to-flip (nth$ 1 ?casillas)))  ; Añadir la primera ficha opuesta
+                 
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
+                 (bind ?valid-direction FALSE)
+                 
+                 ; Seguir en esta dirección buscando fichas a voltear
                  (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
-                    (bind ?neighbor (nth$ 1 (find-fact ((?c casilla))
-                                                       (and (eq ?c:fila ?x)
-                                                            (eq ?c:columna ?y)))))
-                    (if (eq (fact-slot-value ?neighbor estado) ?opposite)
+                    (bind ?casillas (find-fact ((?c casilla))
+                                            (and (eq ?c:fila ?x)
+                                                 (eq ?c:columna ?y))))
+                    
+                    (if (> (length$ ?casillas) 0)
                         then
-                        (bind ?to-flip (create$ ?to-flip ?neighbor))
+                        (bind ?current-cell (nth$ 1 ?casillas))
+                        (bind ?estado-actual (fact-slot-value ?current-cell estado))
+                        
+                        (if (eq ?estado-actual ?estado)
+                            then
+                            ; Encontramos una ficha del mismo color, flanqueo verificado
+                            (bind ?valid-direction TRUE)
+                            (break))
+                        
+                        (if (eq ?estado-actual vacia)
+                            then
+                            ; Espacio vacío, no hay flanqueo
+                            (break))
+                        
+                        ; Si es una ficha opuesta, añadirla a las que se voltearán
+                        (bind ?to-flip (create$ ?to-flip ?current-cell))
                         (bind ?x (+ ?x ?dx))
-                        (bind ?y (+ ?y ?dy))
-                        else
-                        (if (eq (fact-slot-value ?neighbor estado) ?estado)
+                        (bind ?y (+ ?y ?dy)))
+                 )
+                 
+                 ; Si la dirección es válida, voltear todas las fichas recopiladas
+                 (if ?valid-direction
+                     then
+                     (foreach ?piece ?to-flip
+                        (if (neq ?piece nil)
                             then
-                            (foreach ?piece ?to-flip
-                               (modify ?piece (estado ?estado)))
-                            (break))
-                        (if (eq (fact-slot-value ?neighbor estado) vacia)
-                            then
-                            (break))
-                    )
+                            (modify ?piece (estado ?estado))
+                            (bind ?total-flipped (+ ?total-flipped 1))))
                  )
              )
          )
       )
    )
    
-   (printout t "(" ?fila ", " ?columna ") kolorea: " ?estado crlf)
-   (mostrar)
-
-   ; Mostrar movimientos del siguiente jugador
-   (if (eq ?estado negra)
+   ; Actualizar los contadores de fichas tras el volteo
+   (if (> ?total-flipped 0)
        then
-       (printout t crlf ">>> Turno de BLANCAS:" crlf)
-       (mostrar-movimientos-disponibles blanca)
-       else
-       (printout t crlf ">>> Turno de NEGRAS:" crlf)
-       (mostrar-movimientos-disponibles negra)
+       (bind ?f-player (nth$ 1 (find-fact ((?f fichas-disponibles)) 
+                                        (eq ?f:jugador (if (eq ?estado negra) then negro else blanco)))))
+       (bind ?f-opponent (nth$ 1 (find-fact ((?f fichas-disponibles)) 
+                                          (eq ?f:jugador (if (eq ?estado negra) then blanco else negro)))))
+       
+       (modify ?f-player (cantidad (- (fact-slot-value ?f-player cantidad) ?total-flipped)))
+       (modify ?f-opponent (cantidad (+ (fact-slot-value ?f-opponent cantidad) ?total-flipped)))
    )
-
-(return TRUE)
-
+   
+   ; Cambiar el turno
+   (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+   (modify ?tablero (turno (if (eq ?estado negra) then blanco else negro)))
+   
+   ; Mensaje de confirmación
+   (printout t "Pieza añadida en (" ?fila ", " ?columna ") con color: " ?estado crlf)
+   (printout t "Fichas volteadas: " ?total-flipped crlf)
+   
+   ; Mostrar el tablero actualizado
+   (assert (visualizar (mostrar si)))
+   (run)
+   
+   ; Mostrar movimientos del siguiente jugador
+   (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
+   (printout t crlf ">>> Turno de " (if (eq ?siguiente-turno negra) then "NEGRAS" else "BLANCAS") ":" crlf)
+   (mostrar-movimientos-disponibles ?siguiente-turno)
+   
+   (return TRUE)
 )
