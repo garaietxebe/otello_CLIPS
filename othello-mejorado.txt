@@ -262,6 +262,17 @@
 )
 
 (deffunction anadir-pieza (?fila ?columna ?estado)
+   ; Verificar si es el turno correcto
+   (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+   (bind ?turno-actual (fact-slot-value ?tablero turno))
+   (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
+   
+   ; Verificar si el color de la pieza corresponde al turno actual
+   (if (neq ?estado ?color-turno)
+       then
+       (printout t "Error: No es el turno de " ?estado ". Es el turno de " ?color-turno "." crlf)
+       (return FALSE))
+   
    ; Verificar si el movimiento es válido
    (if (not (mugimendu_egokia ?fila ?columna ?estado))
        then
@@ -275,7 +286,7 @@
    (modify ?c (estado ?estado))
    
    ; Actualizar el contador de fichas (reduzca las disponibles)
-   (bind ?f (nth$ 1 (find-fact ((?f fichas-disponibles)) (eq ?f:jugador (if (eq ?estado negra) then negro else blanco)))))
+   (bind ?f (nth$ 1 (find-fact ((?f fichas-disponibles)) (eq ?f:jugador ?turno-actual))))
    (if (> (fact-slot-value ?f cantidad) 0)
        then
        (modify ?f (cantidad (- (fact-slot-value ?f cantidad) 1))))
@@ -356,17 +367,16 @@
    (if (> ?total-flipped 0)
        then
        (bind ?f-player (nth$ 1 (find-fact ((?f fichas-disponibles)) 
-                                        (eq ?f:jugador (if (eq ?estado negra) then negro else blanco)))))
+                                        (eq ?f:jugador ?turno-actual))))
        (bind ?f-opponent (nth$ 1 (find-fact ((?f fichas-disponibles)) 
-                                          (eq ?f:jugador (if (eq ?estado negra) then blanco else negro)))))
+                                          (eq ?f:jugador (if (eq ?turno-actual negro) then blanco else negro)))))
        
        (modify ?f-player (cantidad (- (fact-slot-value ?f-player cantidad) ?total-flipped)))
        (modify ?f-opponent (cantidad (+ (fact-slot-value ?f-opponent cantidad) ?total-flipped)))
    )
    
    ; Cambiar el turno
-   (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
-   (modify ?tablero (turno (if (eq ?estado negra) then blanco else negro)))
+   (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
    
    ; Mensaje de confirmación
    (printout t "Pieza añadida en (" ?fila ", " ?columna ") con color: " ?estado crlf)
@@ -382,4 +392,14 @@
    (mostrar-movimientos-disponibles ?siguiente-turno)
    
    (return TRUE)
+)
+
+(deffunction jugar (?fila ?columna)
+   ; Función simplificada para facilitar el juego
+   (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+   (bind ?turno-actual (fact-slot-value ?tablero turno))
+   (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
+   
+   ; Realizar el movimiento con el color del turno actual
+   (anadir-pieza ?fila ?columna ?color-turno)
 )
