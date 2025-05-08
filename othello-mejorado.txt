@@ -90,22 +90,23 @@
    (printout t crlf)
    (printout t "Estado del tablero:" crlf)
    (printout t "Turno: " ?turno crlf)
-   (printout t "  ")
+   (printout t "  ") 
+   (printout t crlf)
+   (printout t "     1     2    3    4    5    6    7     8" crlf)
+   (printout t "   +---+---+---+---+---+---+---+---+" crlf)
+(loop-for-count (?i 1 ?dim) do
+   (printout t (str-cat ?i " |"))
    (loop-for-count (?j 1 ?dim) do
-      (printout t ?j " "))
+      (bind ?estado (fact-slot-value (nth$ 1 (find-fact ((?c casilla)) 
+                           (and (eq ?c:fila ?i) (eq ?c:columna ?j)))) estado))
+      (if (eq ?estado vacia)
+         then (printout t "  ·  |")
+         else (if (eq ?estado negra)
+                 then (printout t " N |")
+                 else (printout t " B |"))))
    (printout t crlf)
-   (loop-for-count (?i 1 ?dim) do
-      (printout t ?i " ")
-      (loop-for-count (?j 1 ?dim) do
-         (bind ?estado (fact-slot-value (nth$ 1 (find-fact ((?c casilla)) (and (eq ?c:fila ?i) (eq ?c:columna ?j)))) estado))
-         (if (eq ?estado vacia)
-             then (printout t "· ")
-             else (if (eq ?estado negra)
-                   then (printout t "N ")
-                   else (printout t "B "))))
-      (printout t crlf))
-   (printout t crlf)
-   (retract ?v))
+   (printout t "   +---+---+---+---+---+---+---+---+" crlf))
+(printout t "     1     2    3    4    5   6     7     8" crlf))
 
 ; Regla para mostrar mensajes
 (defrule mostrar-mensaje
