@@ -292,26 +292,16 @@
        (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
        (printout t "Txanda automatikoki aldatu da." crlf)  ; Turn automatically changed
        (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
-       (mostrar-movimientos-disponibles ?siguiente-turno)
-   else 
-   (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
-   (modify ?game-state (consecutive-switches 0))
-   (foreach ?mov ?movimientos
-      (printout t ?mov " "))
-   (printout t crlf))
-   
-
-
-
-
-
-
-
+      else 
+      (foreach ?mov ?movimientos
+         (printout t ?mov " "))
+      (printout t crlf))
 
    (printout t "Guztira: " ?count " mugimendu" crlf crlf)
    ; Update the board display to show the options
    (assert (visualizar (mostrar si)))
    (run)
+   (return TRUE)
 )
 
 
