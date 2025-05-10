@@ -13,13 +13,13 @@
 ; Plantilla para representar una casilla del tablero
 (deftemplate casilla
    (slot fila (type INTEGER))
-   (slot columna (type INTEGER))
+   (slot columna (type INTEGER)) ;SARTU HEMEN OPTION CUANDO TIRE
    (slot estado (type SYMBOL) (allowed-values vacia negra blanca) (default vacia)))
 
 ; Plantilla para representar la cantidad de fichas disponibles de cada jugador
 (deftemplate fichas-disponibles
    (slot jugador (type SYMBOL) (allowed-values negro blanco))
-   (slot cantidad (type INTEGER) (default 30)))
+   (slot cantidad (type INTEGER) (default 32)))
 
 ; Plantilla para mostrar mensajes al usuario
 (deftemplate mensaje
@@ -29,6 +29,10 @@
 (deftemplate visualizar
    (slot mostrar (type SYMBOL) (allowed-values si no) (default no)))
 
+;Plantilla para acabar el juego en caso de movimientos legales inexistentes 
+(deftemplate game-state
+   (slot consecutive-switches (type INTEGER) (default 0)))
+
 ; Reglas del juego
 
 ; Regla para inicializar el tablero
@@ -37,6 +41,7 @@
    (not (tablero))
    =>
    (assert (tablero))
+   (assert (game-state))  ; Initialize game state
    (assert (mensaje (texto "Tablero inicializado. Dimension: 8x8"))))
 
 ; Regla para inicializar las fichas disponibles
@@ -87,6 +92,7 @@
    (tablero (dimension ?dim) (turno ?turno))
       ?v <- (visualizar (mostrar si))
    =>
+
    (printout t crlf)
    (printout t "Estado del tablero:" crlf)
    (printout t "Turno: " ?turno crlf)
@@ -100,10 +106,12 @@
       (bind ?estado (fact-slot-value (nth$ 1 (find-fact ((?c casilla)) 
                            (and (eq ?c:fila ?i) (eq ?c:columna ?j)))) estado))
       (if (eq ?estado vacia)
-         then (printout t "  ·  |")
-         else (if (eq ?estado negra)
-                 then (printout t " N |")
-                 else (printout t " B |"))))
+   then (printout t "  ·  |")
+   else (if (eq ?estado option)
+           then (printout t "  X  |"))
+           else (if (eq ?estado negra)
+                   then (printout t " N |")
+                   else (printout t " B |"))))
    (printout t crlf)
    (printout t "   +---+---+---+---+---+---+---+---+" crlf))
 (printout t "     1     2    3    4    5   6     7     8" crlf)
@@ -228,6 +236,11 @@
 )
 
 (deffunction mostrar-movimientos-disponibles (?estado)
+   ; lehengo txandaren optionak reset
+   (do-for-all-facts ((?c casilla)) 
+      (eq ?c:estado option)
+      (modify ?c (estado vacia)))
+
    (printout t "Mugimendu posibleak " ?estado "entzat:" crlf)
    (bind ?count 0)
    (bind ?movimientos (create$))
@@ -237,24 +250,75 @@
          (if (and (not (okupatuta_dago ?fila ?columna))
                  (mugimendu_egokia ?fila ?columna ?estado))
              then
+             ; Mark the valid move position with an X
+             (bind ?casilla (nth$ 1 (find-fact ((?c casilla))
+                                              (and (eq ?c:fila ?fila)
+                                                   (eq ?c:columna ?columna)))))
+             ;(modify ?casilla (estado option)) HAU ERE DESKOMENTAU
              (bind ?movimientos (create$ ?movimientos (str-cat "(" ?fila "," ?columna ")")))
              (bind ?count (+ ?count 1))
          )
       )
    )
    
-   (if (= ?count 0)
-       then (printout t "Ez dago mugimendu posibleik." crlf)
-       else 
-       (foreach ?mov ?movimientos
-          (printout t ?mov " "))
-       (printout t crlf))
+(if (= ?count 0)
+       then 
+       (printout t "Ez dago mugimendu posibleik." crlf)
+      ; Update consecutive switches counter
+       (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
+       (bind ?switches (fact-slot-value ?game-state consecutive-switches))
+       (modify ?game-state (consecutive-switches (+ ?switches 1)))
+
+      (if (= (+ ?switches 1) 2)
+           then
+           ; Count final pieces and declare winner
+           (bind ?negras (length$ (find-all-facts ((?c casilla)) (eq ?c:estado negra))))
+           (bind ?blancas (length$ (find-all-facts ((?c casilla)) (eq ?c:estado blanca))))
+           (printout t crlf "=== GAME OVER ===" crlf)
+           (printout t "Final score:" crlf)
+           (printout t "Black pieces: " ?negras crlf)
+           (printout t "White pieces: " ?blancas crlf)
+           (if (> ?negras ?blancas)
+               then (printout t "Black wins!" crlf)
+               else (if (< ?negras ?blancas)
+                       then (printout t "White wins!" crlf)
+                       else (printout t "It's a tie!" crlf)))
+           (return FALSE))
+      else
+
+       ; Auto-switch turn when no moves available
+       (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+       (bind ?turno-actual (fact-slot-value ?tablero turno))
+       (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
+       (printout t "Txanda automatikoki aldatu da." crlf)  ; Turn automatically changed
+       (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
+       (mostrar-movimientos-disponibles ?siguiente-turno)
+   else 
+   (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
+   (modify ?game-state (consecutive-switches 0))
+   (foreach ?mov ?movimientos
+      (printout t ?mov " "))
+   (printout t crlf))
    
+
+
+
+
+
+
+
+
    (printout t "Guztira: " ?count " mugimendu" crlf crlf)
+   ; Update the board display to show the options
+   (assert (visualizar (mostrar si)))
+   (run)
 )
 
 
-(deffunction anadir-pieza (?fila ?columna ?estado)
+
+
+
+(deffunction AP (?fila ?columna ?estado)
    ; Verificar si es el turno correcto
    (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
    (bind ?turno-actual (fact-slot-value ?tablero turno))
@@ -396,5 +460,5 @@
    (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
    
    ; Realizar el movimiento con el color del turno actual
-   (anadir-pieza ?fila ?columna ?color-turno)
+   (AP ?fila ?columna ?color-turno)
 )
