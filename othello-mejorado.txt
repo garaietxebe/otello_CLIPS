@@ -41,6 +41,7 @@
    (not (tablero))
    =>
    (assert (tablero))
+   (assert (auto-white on))
    (assert (game-state))  ; Initialize game state
    (assert (mensaje (texto "Tablero inicializado. Dimension: 8x8"))))
 
@@ -440,6 +441,29 @@
    
    (return TRUE)
 )
+
+;regla para el bot 
+(defrule auto-white-move
+   (declare (salience 50))
+   (auto-white on)
+   (tablero (turno blanco))
+   =>
+   (printout t "Auto-white mode: buscando primer movimiento disponible para blancas..." crlf)
+   (bind ?found FALSE)
+   (loop-for-count (?fila 1 8) do
+      (loop-for-count (?columna 1 8) do
+         (if (and (not ?found)
+                  (mugimendu_egokia ?fila ?columna blanca))
+             then
+             (printout t "Auto-white coloca ficha blanca en (" ?fila "," ?columna ")" crlf)
+             (AP ?fila ?columna blanca)
+             (bind ?found TRUE)
+         )
+      )
+   )
+)
+
+
 
 (deffunction jugar (?fila ?columna)
    ; Función simplificada para facilitar el juego
