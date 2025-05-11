@@ -236,7 +236,7 @@
 )
 
 (deffunction mostrar-movimientos-disponibles (?estado)
-   ; lehengo txandaren optionak reset
+   ; Reset previous options
    (do-for-all-facts ((?c casilla)) 
       (eq ?c:estado option)
       (modify ?c (estado vacia)))
@@ -245,33 +245,33 @@
    (bind ?count 0)
    (bind ?movimientos (create$))
    
+   ; Find valid moves
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
          (if (and (not (okupatuta_dago ?fila ?columna))
                  (mugimendu_egokia ?fila ?columna ?estado))
              then
-             ; Mark the valid move position with an X
              (bind ?casilla (nth$ 1 (find-fact ((?c casilla))
                                               (and (eq ?c:fila ?fila)
                                                    (eq ?c:columna ?columna)))))
-             ;(modify ?casilla (estado option)) HAU ERE DESKOMENTAU
+             ;(modify ?casilla (estado option)) DESKOMENTAU
              (bind ?movimientos (create$ ?movimientos (str-cat "(" ?fila "," ?columna ")")))
              (bind ?count (+ ?count 1))
          )
       )
    )
    
-(if (= ?count 0)
+   ; Handle no moves case or show available moves
+   (if (= ?count 0)
        then 
        (printout t "Ez dago mugimendu posibleik." crlf)
-      ; Update consecutive switches counter
        (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
        (bind ?switches (fact-slot-value ?game-state consecutive-switches))
        (modify ?game-state (consecutive-switches (+ ?switches 1)))
 
-      (if (= (+ ?switches 1) 2)
+       (if (= (+ ?switches 1) 2)
            then
-           ; Count final pieces and declare winner
+           ; Game over logic
            (bind ?negras (length$ (find-all-facts ((?c casilla)) (eq ?c:estado negra))))
            (bind ?blancas (length$ (find-all-facts ((?c casilla)) (eq ?c:estado blanca))))
            (printout t crlf "=== GAME OVER ===" crlf)
@@ -283,25 +283,23 @@
                else (if (< ?negras ?blancas)
                        then (printout t "White wins!" crlf)
                        else (printout t "It's a tie!" crlf)))
+           (return FALSE)
+           else
+           ; Auto-switch turn only when no moves available
+           (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
+           (bind ?turno-actual (fact-slot-value ?tablero turno))
+           (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
+           (printout t "Txanda automatikoki aldatu da." crlf)
            (return FALSE))
-      else
-
-       ; Auto-switch turn when no moves available
-       (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
-       (bind ?turno-actual (fact-slot-value ?tablero turno))
-       (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
-       (printout t "Txanda automatikoki aldatu da." crlf)  ; Turn automatically changed
-       (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
-      else 
-      (foreach ?mov ?movimientos
-         (printout t ?mov " "))
-      (printout t crlf))
-
-   (printout t "Guztira: " ?count " mugimendu" crlf crlf)
-   ; Update the board display to show the options
-   (assert (visualizar (mostrar si)))
-   (run)
-   (return TRUE)
+       else 
+       ; Show available moves when there are options
+       (foreach ?mov ?movimientos
+           (printout t ?mov " "))
+       (printout t crlf)
+       (printout t "Guztira: " ?count " mugimendu" crlf crlf)
+       (assert (visualizar (mostrar si)))
+       (run)
+       (return TRUE))
 )
 
 
