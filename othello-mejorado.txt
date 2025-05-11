@@ -442,6 +442,66 @@
    (return TRUE)
 )
 
+(deffunction posibles-volteos-blancas ()
+   (bind ?flips-list (create$))
+   (loop-for-count (?fila 1 8) do
+      (loop-for-count (?columna 1 8) do
+         (if (mugimendu_egokia ?fila ?columna blanca)
+             then
+             (bind ?flips (calcular-volteos ?fila ?columna blanca))
+             (bind ?flips-list (create$ ?flips-list ?flips))
+         )
+      )
+   )
+   (return ?flips-list)
+)
+
+(deffunction calcular-volteos (?fila ?columna ?estado)
+   (bind ?opposite (if (eq ?estado negra) then blanca else negra))
+   (bind ?total-flipped 0)
+   (loop-for-count (?dx -1 1) do
+      (loop-for-count (?dy -1 1) do
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
+                  (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
+                  (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
+             then
+             (bind ?x (+ ?fila ?dx))
+             (bind ?y (+ ?columna ?dy))
+             (bind ?casillas (find-fact ((?c casilla))
+                                      (and (eq ?c:fila ?x)
+                                           (eq ?c:columna ?y))))
+             (if (and (> (length$ ?casillas) 0)
+                      (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
+                 then
+                 (bind ?x (+ ?x ?dx))
+                 (bind ?y (+ ?y ?dy))
+                 (bind ?flipped 0)
+                 (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
+                    (bind ?casillas (find-fact ((?c casilla))
+                                            (and (eq ?c:fila ?x)
+                                                 (eq ?c:columna ?y))))
+                    (if (> (length$ ?casillas) 0)
+                        then
+                        (bind ?estado-actual (fact-slot-value (nth$ 1 ?casillas) estado))
+                        (if (eq ?estado-actual ?estado)
+                            then
+                            (bind ?total-flipped (+ ?total-flipped ?flipped))
+                            (break))
+                        (if (eq ?estado-actual vacia)
+                            then
+                            (break))
+                        (bind ?flipped (+ ?flipped 1))
+                        (bind ?x (+ ?x ?dx))
+                        (bind ?y (+ ?y ?dy)))
+                 )
+             )
+         )
+      )
+   )
+   (return ?total-flipped)
+)
+
+
 ;regla para el bot 
 (defrule auto-white-move
    (declare (salience 50))
@@ -457,6 +517,7 @@
              then
              (printout t "Auto-white coloca ficha blanca en (" ?fila "," ?columna ")" crlf)
              (AP ?fila ?columna blanca)
+             (posibles-volteos-blancas ())
              (bind ?found TRUE)
          )
       )
