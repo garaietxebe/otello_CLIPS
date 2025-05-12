@@ -434,10 +434,13 @@
    
    (run)
    
-   ; Mostrar movimientos del siguiente jugador
-   (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
-   (printout t crlf ">>> Turno de " (if (eq ?siguiente-turno negra) then "NEGRAS" else "BLANCAS") ":" crlf)
-   (mostrar-movimientos-disponibles ?siguiente-turno)
+   ; Mostrar movimientos del siguiente jugador solo si no es auto-white
+
+      (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
+      (if (eq ?siguiente-turno negra)
+         then 
+         (printout t crlf ">>> Turno de NEGRAS:" crlf)
+         (mostrar-movimientos-disponibles negra))
    
    (return TRUE)
 )
@@ -463,9 +466,9 @@
              (if (and (> (length$ ?casillas) 0)
                      (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
                  then
+                 (bind ?flipped 1)  ; Start counting from the first opposite piece
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
-                 (bind ?flipped 0)
                  
                  (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
                     (bind ?casillas (find-fact ((?c casilla))
@@ -481,6 +484,7 @@
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
+                            (bind ?flipped 0)  ; Reset if we hit an empty space
                             (break))
                         (bind ?flipped (+ ?flipped 1))
                         (bind ?x (+ ?x ?dx))
