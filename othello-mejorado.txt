@@ -506,6 +506,7 @@
    (printout t "Auto-white mode: analizando movimientos disponibles..." crlf)
    (bind ?found FALSE)
    (bind ?best-move (create$ 0 0 0))  ; fila, columna, flips
+   (bind ?max-flips 0)  ; Track maximum flips found
    
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
@@ -513,9 +514,10 @@
              then
              (bind ?flips (calcular-volteos ?fila ?columna blanca))
              (printout t "Posición (" ?fila "," ?columna ") voltearía " ?flips " fichas" crlf)
-             (if (not ?found)
+             (if (or (not ?found) (> ?flips ?max-flips))
                  then
                  (bind ?found TRUE)
+                 (bind ?max-flips ?flips)
                  (bind ?best-move (create$ ?fila ?columna ?flips))
              )
          )
@@ -526,7 +528,7 @@
        then
        (bind ?best-fila (nth$ 1 ?best-move))
        (bind ?best-columna (nth$ 2 ?best-move))
-       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna ")" crlf)
+       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna ") volteando " ?max-flips " fichas" crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
