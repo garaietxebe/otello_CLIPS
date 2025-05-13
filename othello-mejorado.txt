@@ -320,6 +320,11 @@
    (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
    (bind ?turno-actual (fact-slot-value ?tablero turno))
    (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
+
+   ; Reset consecutive switches counter when a valid move is made
+   (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
+   (modify ?game-state (consecutive-switches 0))
+   
    
    ; Verificar si el color de la pieza corresponde al turno actual
    (if (neq ?estado ?color-turno)
@@ -535,13 +540,29 @@
    (bind ?max-flips 0)
    (bind ?best-moves (create$))  ; List to store all moves with max flips
    
+    (bind ?has-moves FALSE)
+   (loop-for-count (?fila 1 8) do
+      (loop-for-count (?columna 1 8) do
+          (if (mugimendu_egokia ?fila ?columna blanca)
+             then
+             (bind ?has-moves TRUE)
+             (break))))
+   
+   ; If no moves available, call mostrar-movimientos-disponibles to handle the skip
+   (if (not ?has-moves)
+       then
+       (printout t "Auto-white no tiene movimientos disponibles." crlf)
+       (mostrar-movimientos-disponibles blanca)
+       (return))
+
+
    ; Find all possible moves and track the best ones
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
           (if (mugimendu_egokia ?fila ?columna blanca)
              then
              (bind ?flips (calcular-volteos ?fila ?columna blanca))
-             (printout t "Posición (" ?fila "," ?columna ") voltearía " ?flips " fichas" crlf)
+             (printout t "Posición (" ?fila "," ?columna ") tendria " ?flips " puntos para ser elegido" crlf)
              
              ; If we found a better move, clear the list and start new
              (if (> ?flips ?max-flips)
@@ -578,8 +599,8 @@
               
        (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna 
                  ") volteando " ?max-flips " fichas" 
-                 (if ?is-corner then " ¡MOVIMIENTO EN ESQUINA!" 
-                  else (if ?is-edge then " ¡MOVIMIENTO EN BORDE!" else "")) crlf)
+                 (if ?is-corner then " ESQUINA" 
+                  else (if ?is-edge then " BORDE" else "")) crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
