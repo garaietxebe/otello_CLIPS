@@ -451,6 +451,12 @@
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
    (bind ?total-flipped 0)
    
+    (bind ?is-corner (or 
+      (and (eq ?fila 1) (eq ?columna 1))
+      (and (eq ?fila 1) (eq ?columna 8))
+      (and (eq ?fila 8) (eq ?columna 1))
+      (and (eq ?fila 8) (eq ?columna 8))))
+
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
          (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
@@ -481,6 +487,8 @@
                         (if (eq ?estado-actual ?estado)
                             then
                             (bind ?total-flipped (+ ?total-flipped ?flipped))
+                            (if ?is-corner then
+                              (bind ?total-flipped (+ ?total-flipped 5)))
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
@@ -513,7 +521,7 @@
          (if (mugimendu_egokia ?fila ?columna blanca)
              then
              (bind ?flips (calcular-volteos ?fila ?columna blanca))
-             (printout t "Posición (" ?fila "," ?columna ") voltearía " ?flips " fichas" crlf)
+             (printout t "Posición (" ?fila "," ?columna ") tiene " ?flips " puntos" crlf)
              (if (or (not ?found) (> ?flips ?max-flips))
                  then
                  (bind ?found TRUE)
@@ -528,7 +536,12 @@
        then
        (bind ?best-fila (nth$ 1 ?best-move))
        (bind ?best-columna (nth$ 2 ?best-move))
-       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna ") volteando " ?max-flips " fichas" crlf)
+       (bind ?is-corner (or 
+          (and (eq ?best-fila 1) (eq ?best-columna 1))
+          (and (eq ?best-fila 1) (eq ?best-columna 8))
+          (and (eq ?best-fila 8) (eq ?best-columna 1))
+          (and (eq ?best-fila 8) (eq ?best-columna 8))))
+       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna ") volteando " ?max-flips " fichas" (if ?is-corner then " ¡MOVIMIENTO EN ESQUINA!" else "") crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
