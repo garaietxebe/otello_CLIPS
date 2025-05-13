@@ -529,7 +529,7 @@
    (return ?total-flipped)
 )
 
-
+;SI NO TIENES MOVIMIENTOS HAY QUE HACER QUE EL NEGEO VEAS las suyas
 (defrule auto-white-move
    (declare (salience 50))
    (auto-white on)
