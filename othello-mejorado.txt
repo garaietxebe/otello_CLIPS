@@ -457,6 +457,11 @@
       (and (eq ?fila 8) (eq ?columna 1))
       (and (eq ?fila 8) (eq ?columna 8))))
 
+   (bind ?is-edge (and (not ?is-corner)
+      (or (eq ?fila 1) (eq ?fila 8)
+          (eq ?columna 1) (eq ?columna 8))))
+
+
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
          (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
@@ -488,7 +493,11 @@
                             then
                             (bind ?total-flipped (+ ?total-flipped ?flipped))
                             (if ?is-corner then
-                              (bind ?total-flipped (+ ?total-flipped 5)))
+                                    (bind ?total-flipped (+ ?total-flipped 5))
+                              else 
+                                    (if ?is-edge then
+                                       (bind ?total-flipped (+ ?total-flipped 2))))
+
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
@@ -518,10 +527,18 @@
    
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
-         (if (mugimendu_egokia ?fila ?columna blanca)
+          (if (mugimendu_egokia ?fila ?columna blanca)
              then
              (bind ?flips (calcular-volteos ?fila ?columna blanca))
-             (printout t "Posición (" ?fila "," ?columna ") tiene " ?flips " puntos" crlf)
+             (printout t "Posición (" ?fila "," ?columna ") voltearía " ?flips " fichas" crlf)
+             (bind ?is-corner (or 
+                (and (eq ?fila 1) (eq ?columna 1))
+                (and (eq ?fila 1) (eq ?columna 8))
+                (and (eq ?fila 8) (eq ?columna 1))
+                (and (eq ?fila 8) (eq ?columna 8))))
+             (bind ?is-edge (and (not ?is-corner)
+                (or (eq ?fila 1) (eq ?fila 8)
+                    (eq ?columna 1) (eq ?columna 8))))
              (if (or (not ?found) (> ?flips ?max-flips))
                  then
                  (bind ?found TRUE)
@@ -541,7 +558,10 @@
           (and (eq ?best-fila 1) (eq ?best-columna 8))
           (and (eq ?best-fila 8) (eq ?best-columna 1))
           (and (eq ?best-fila 8) (eq ?best-columna 8))))
-       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna ") volteando " ?max-flips " fichas" (if ?is-corner then " ¡MOVIMIENTO EN ESQUINA!" else "") crlf)
+       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna 
+                 ") volteando " ?max-flips " fichas" 
+                 (if ?is-corner then " ¡MOVIMIENTO EN ESQUINA!" 
+                  else (if ?is-edge then " ¡MOVIMIENTO EN BORDE!" else "")) crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
