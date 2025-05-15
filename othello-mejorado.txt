@@ -479,9 +479,9 @@
          ; Print statements for corner and edge detection only if recursive is true
          (if ?recursivo then
             (if ?is-corner then
-                (printout t "Bonus: esquina en  (" ?fila "," ?columna ")!" crlf))
+                (printout t "Bonus: esquina en (" ?fila "," ?columna ")!" crlf))
             (if ?is-edge then
-                (printout t "Bonus: borde en    (" ?fila "," ?columna ")!" crlf)))
+                (printout t "Bonus: borde en (" ?fila "," ?columna ")!" crlf)))
 
    ; Only make recursive call if recursivo is true
    (if ?recursivo then
