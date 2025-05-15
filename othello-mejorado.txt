@@ -1,51 +1,51 @@
 ; Othello jokoa
-; Autores: Garai eta Urdax
-; Data: 30/04/2025 - ...
+; Egileak: Garai eta Urdax
+; Data: 2025/04/30 - 2025/05/15
 
 
-; Definición de plantillas
+; plantillak
 
-; Plantilla para representar el tablero
+; taula
 (deftemplate tablero
    (slot dimension (type INTEGER) (default 8))
    (slot turno (type SYMBOL) (allowed-values negro blanco) (default negro)))
 
-; Plantilla para representar una casilla del tablero
+; taulako gelaxkak
 (deftemplate casilla
    (slot fila (type INTEGER))
-   (slot columna (type INTEGER)) ;SARTU HEMEN OPTION CUANDO TIRE
+   (slot columna (type INTEGER)) ; SARTU HEMEN AUKERA BOTATZEAN
    (slot estado (type SYMBOL) (allowed-values vacia negra blanca) (default vacia)))
 
-; Plantilla para representar la cantidad de fichas disponibles de cada jugador
+; jokalari bakoitzaren fitxa kopurua
 (deftemplate fichas-disponibles
    (slot jugador (type SYMBOL) (allowed-values negro blanco))
    (slot cantidad (type INTEGER) (default 32)))
 
-; Plantilla para mostrar mensajes al usuario
+; jokalariari mezua
 (deftemplate mensaje
    (slot texto (type STRING)))
 
-; Plantilla para controlar la visualización del tablero
+; taula erakusteko
 (deftemplate visualizar
    (slot mostrar (type SYMBOL) (allowed-values si no) (default no)))
 
-;Plantilla para acabar el juego en caso de movimientos legales inexistentes 
+;jokoa amaitzeko
 (deftemplate game-state
    (slot consecutive-switches (type INTEGER) (default 0)))
 
-; Reglas del juego
+; arauak
 
-; Regla para inicializar el tablero
+; taula hasteko
 (defrule inicializar-tablero
    (declare (salience 100))
    (not (tablero))
    =>
    (assert (tablero))
    (assert (auto-white on))
-   (assert (game-state))  ; Initialize game state
-   (assert (mensaje (texto "Tablero inicializado. Dimension: 8x8"))))
+   (assert (game-state))  
+   (assert (mensaje (texto "Taula hasieratuta. Dimentsioa: 8x8"))))
 
-; Regla para inicializar las fichas disponibles
+; fitxak hasieratzeko
 (defrule inicializar-fichas
    (declare (salience 99))
    (not (fichas-disponibles (jugador negro)))
@@ -53,9 +53,9 @@
    =>
    (assert (fichas-disponibles (jugador negro) (cantidad 30)))
    (assert (fichas-disponibles (jugador blanco) (cantidad 30)))
-   (assert (mensaje (texto "Fichas inicializadas."))))
+   (assert (mensaje (texto "Fitxak hasieratuta."))))
 
-; Regla para crear casillas vacías
+; gelaxka hutsak sortzeko
 (defrule crear-casillas-vacias
    (declare (salience 98))
    (tablero (dimension ?dim))
@@ -65,7 +65,7 @@
       (loop-for-count (?j 1 ?dim) do
          (assert (casilla (fila ?i) (columna ?j) (estado vacia))))))
 
-; Regla para colocar las fichas iniciales en el centro del tablero
+; Fitxak erdian jartzeko
 (defrule colocar-fichas-iniciales
    (declare (salience 97))
    ?t <- (tablero (dimension ?dim))
@@ -84,10 +84,10 @@
    (modify ?c4 (estado blanca))
    (modify ?f1 (cantidad (- ?cant-negro 2)))
    (modify ?f2 (cantidad (- ?cant-blanco 2)))
-   (assert (mensaje (texto "Fichas iniciales colocadas en el tablero.")))
-   (assert (visualizar (mostrar si))))  ; Activar la visualización del tablero después de colocar las fichas iniciales
+   (assert (mensaje (texto "Hasierako fitxak taulan jarrita.")))
+   (assert (visualizar (mostrar si))))  ; Taularen bistaratzea aktibatu hasierako fitxak jarri ondoren
 
-; Regla para mostrar el estado del tablero
+; Taularen egoera erakusteko araua
 (defrule mostrar-tablero
    (declare (salience -100))
    (tablero (dimension ?dim) (turno ?turno))
@@ -107,7 +107,7 @@
       (if (eq ?estado vacia)
    then (printout t "  ·  |")
    else (if (eq ?estado option)
-           then (printout t "  X  |"))
+            then (printout t "  X  |"))
            else (if (eq ?estado negra)
                    then (printout t " N |")
                    else (printout t " B |"))))
@@ -115,27 +115,27 @@
    (printout t "   +---+---+---+---+---+---+---+---+" crlf))
 (printout t "     1     2    3    4    5   6     7     8" crlf)
 
-    ; Contar fichas
+    ; Fitxak zenbatu
    (bind ?negras (length$ (find-all-facts ((?c casilla)) (eq ?c:estado negra))))
    (bind ?blancas (length$ (find-all-facts ((?c casilla)) (eq ?c:estado blanca))))
          (printout t "  ") 
    (printout t crlf)
 
-   ; Imprimir
-   (printout t "Fichas negras: " ?negras ", Fichas blancas: " ?blancas crlf)
+   ; Inprimatu
+   (printout t "Fitxa beltzak: " ?negras ", Fitxa zuriak: " ?blancas crlf)
 
    (printout t "  ") 
    (printout t crlf)
 )
 
-; Regla para mostrar mensajes
+; Mezuak erakusteko araua
 (defrule mostrar-mensaje
    ?m <- (mensaje (texto ?texto))
    =>
    (printout t ?texto crlf)
    (retract ?m))
 
-; Función para iniciar el juego
+; Jokoa hasteko funtzioa
 (deffunction iniciar-juego ()
    (reset)
    (run))
@@ -148,7 +148,7 @@
    (clear)
 )
 
-; Función para mostrar el tablero manualmente
+; Taula eskuz erakusteko funtzioa
 (deffunction mostrar ()
    (assert (visualizar (mostrar si)))
    (run))
@@ -156,42 +156,42 @@
  ;okupatuta_dago
 
    (deffunction okupatuta_dago (?fila ?columna)
-   ; TRUE okupauta
+   ; TRUE okupatuta
    ; FALSE hutsa
    
    ; Bilatu
    (bind ?casillas (find-fact ((?c casilla)) 
                               (and (eq ?c:fila ?fila) 
-                                   (eq ?c:columna ?columna))))
+                                    (eq ?c:columna ?columna))))
    
    (bind ?casilla (nth$ 1 ?casillas))
    (bind ?estado (fact-slot-value ?casilla estado))
    
    (if (eq ?estado vacia)
        then
-       (return FALSE)  ; No está ocupada
+       (return FALSE)  ; Ez dago okupatuta
        else
-       (return TRUE)   ; Está ocupada (negra o blanca)
+       (return TRUE)   ; Okupatuta dago (beltza edo zuria)
    )
 )
 
 
 (deffunction mugimendu_egokia (?fila ?columna ?estado)
-   ; Versión de mugimendu_egokia sin mensajes de error
+   ; mugimendu_egokiaren bertsioa errore mezurik gabe
    
-   ; 1. ¿Está dentro del tablero?
+   ; 1. Taula barruan dago?
    (if (not (and (>= ?fila 1)(<= ?fila 8) (>= ?columna 1)(<= ?columna 8)))
        then (return FALSE))
 
-   ; 2. ¿Casilla vacía?
+   ; 2. Gelaxka hutsa?
    (if (okupatuta_dago ?fila ?columna)
        then (return FALSE))
    
-   ; 3. ¿Flanquea al menos una ficha?
+   ; 3. Gutxienez fitxa bat inguratzen du?
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
    (bind ?found FALSE)
    
-   ; Verificar en las 8 direcciones
+   ; Egiaztatu 8 norabideetan
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
          (if (and (not (and (eq ?dx 0) (eq ?dy 0)))
@@ -200,22 +200,22 @@
              then
              (bind ?x (+ ?fila ?dx))
              (bind ?y (+ ?columna ?dy))
-             ; Verificar casilla adyacente
+             ; Egiaztatu alboko gelaxka
              (bind ?casillas (find-fact ((?c casilla))
-                                      (and (eq ?c:fila ?x)
+                                        (and (eq ?c:fila ?x)
                                            (eq ?c:columna ?y))))
              
              (if (and (> (length$ ?casillas) 0)
-                     (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
+                      (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
                  then
-                 ; Hay una ficha opuesta adyacente, ahora seguir en esta dirección
+                 ; Alboko aurkako fitxa bat dago, orain norabide honetan jarraitu
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
                  
-                 ; Seguir buscando en esta dirección
+                 ; Norabide honetan bilatzen jarraitu
                  (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
                     (bind ?casillas (find-fact ((?c casilla))
-                                            (and (eq ?c:fila ?x)
+                                                 (and (eq ?c:fila ?x)
                                                  (eq ?c:columna ?y))))
                     
                     (if (> (length$ ?casillas) 0)
@@ -223,14 +223,14 @@
                         (bind ?estado-actual (fact-slot-value (nth$ 1 ?casillas) estado))
                         (if (eq ?estado-actual ?estado)
                             then
-                            ; Encontramos una ficha del mismo color, flanqueo verificado
+                            ; Kolore bereko fitxa bat aurkitu dugu, inguraketa egiaztatuta
                             (bind ?found TRUE)
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
-                            ; Espacio vacío, no hay flanqueo
+                            ; Espazio hutsa, ez dago inguraketarik
                             (break))
-                        ; Si es una ficha opuesta, continuar buscando
+                        ; Aurkako fitxa bada, bilatzen jarraitu
                         (bind ?x (+ ?x ?dx))
                         (bind ?y (+ ?y ?dy)))
                  )
@@ -243,7 +243,7 @@
 )
 
 (deffunction mostrar-movimientos-disponibles (?estado)
-   ; Reset previous options
+   ; Aurreko aukerak berrezarri
    (do-for-all-facts ((?c casilla)) 
       (eq ?c:estado option)
       (modify ?c (estado vacia)))
@@ -252,23 +252,23 @@
    (bind ?count 0)
    (bind ?movimientos (create$))
    
-   ; Find valid moves
+   ; Mugimendu baliodunak aurkitu
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
          (if (and (not (okupatuta_dago ?fila ?columna))
                  (mugimendu_egokia ?fila ?columna ?estado))
              then
              (bind ?casilla (nth$ 1 (find-fact ((?c casilla))
-                                              (and (eq ?c:fila ?fila)
+                                             (and (eq ?c:fila ?fila)
                                                    (eq ?c:columna ?columna)))))
-             ;(modify ?casilla (estado option)) DESKOMENTAU
+             ;(modify ?casilla (estado option)) DESKOMENTATU
              (bind ?movimientos (create$ ?movimientos (str-cat "(" ?fila "," ?columna ")")))
              (bind ?count (+ ?count 1))
          )
       )
    )
    
-   ; Handle no moves case or show available moves
+   ; Mugimendurik ez dagoen kasua kudeatu edo eskuragarri dauden mugimenduak erakutsi
    (if (= ?count 0)
        then 
        (printout t "Ez dago mugimendu posibleik." crlf)
@@ -278,28 +278,28 @@
 
        (if (= (+ ?switches 1) 2)
            then
-           ; Game over logic
+           ; Jokoa amaitzeko logika
            (bind ?negras (length$ (find-all-facts ((?c casilla)) (eq ?c:estado negra))))
            (bind ?blancas (length$ (find-all-facts ((?c casilla)) (eq ?c:estado blanca))))
-           (printout t crlf "=== GAME OVER ===" crlf)
-           (printout t "Final score:" crlf)
-           (printout t "Black pieces: " ?negras crlf)
-           (printout t "White pieces: " ?blancas crlf)
+           (printout t crlf "=== JOKOA AMAITU DA ===" crlf)
+           (printout t "Azken puntuazioa:" crlf)
+           (printout t "Fitxa beltzak: " ?negras crlf)
+           (printout t "Fitxa zuriak: " ?blancas crlf)
            (if (> ?negras ?blancas)
-               then (printout t "Black wins!" crlf)
+               then (printout t "Beltzak irabazi du!" crlf)
                else (if (< ?negras ?blancas)
-                       then (printout t "White wins!" crlf)
-                       else (printout t "It's a tie!" crlf)))
+                       then (printout t "Zuriak irabazi du!" crlf)
+                       else (printout t "Berdinketa!" crlf)))
            (return FALSE)
            else
-           ; Auto-switch turn only when no moves available
+           ; Txanda automatikoki aldatu soilik mugimendurik ez dagoenean
            (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
            (bind ?turno-actual (fact-slot-value ?tablero turno))
            (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
            (printout t "Txanda automatikoki aldatu da." crlf)
            (return FALSE))
        else 
-       ; Show available moves when there are options
+       ; Eskuragarri dauden mugimenduak erakutsi aukerak daudenean
        (foreach ?mov ?movimientos
            (printout t ?mov " "))
        (printout t crlf)
@@ -314,74 +314,74 @@
 
 
 (deffunction AP (?fila ?columna ?estado)
-   ; Verificar si es el turno correcto
+   ; Egiaztatu txanda zuzena den
    (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
    (bind ?turno-actual (fact-slot-value ?tablero turno))
    (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
 
-   ; Reset consecutive switches counter when a valid move is made
+   ; Ondoz ondoko aldaketen kontagailua berrezarri mugimendu baliodun bat egiten denean
    (bind ?game-state (nth$ 1 (find-fact ((?g game-state)) TRUE)))
    (modify ?game-state (consecutive-switches 0))
    
    
-   ; Verificar si el color de la pieza corresponde al turno actual
+   ; Egiaztatu piezaren kolorea uneko txandari dagokion
    (if (neq ?estado ?color-turno)
        then
-       (printout t "Error: No es el turno de " ?estado ". Es el turno de " ?color-turno "." crlf)
+       (printout t "Errorea: Ez da " ?estado "(r)en txanda. " ?color-turno "(r)en txanda da." crlf)
        (return FALSE))
    
-   ; Verificar si el movimiento es válido
+   ; Egiaztatu mugimendua balioduna den
    (if (not (mugimendu_egokia ?fila ?columna ?estado))
        then
-       (printout t "Error: Movimiento no válido (" ?fila "," ?columna ")." crlf)
+       (printout t "Errorea: Mugimendu ez balioduna (" ?fila "," ?columna ")." crlf)
        (return FALSE))
    
-   ; Colocar la nueva ficha
+   ; Fitxa berria jarri
    (bind ?c (nth$ 1 (find-fact ((?c casilla))
                            (and (eq ?c:fila ?fila)
                                 (eq ?c:columna ?columna)))))
    (modify ?c (estado ?estado))
    
-   ; Actualizar el contador de fichas (reduzca las disponibles)
+   ; Fitxen kontagailua eguneratu (eskuragarri daudenak murriztu)
    (bind ?f (nth$ 1 (find-fact ((?f fichas-disponibles)) (eq ?f:jugador ?turno-actual))))
    (if (> (fact-slot-value ?f cantidad) 0)
        then
        (modify ?f (cantidad (- (fact-slot-value ?f cantidad) 1))))
    
-   ; Voltear las fichas del oponente
+   ; Aurkariaren fitxak irauli
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
-   (bind ?total-flipped 0)  ; Contador de fichas volteadas
+   (bind ?total-flipped 0)  ; Iraulitako fitxen kontagailua
    
-   ; Verificar en las 8 direcciones
+   ; Egiaztatu 8 norabideetan
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
-         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; No es la propia casilla
+         (if (and (not (and (eq ?dx 0) (eq ?dy 0)))  ; Ez da gelaxka bera
                   (>= (+ ?fila ?dx) 1) (<= (+ ?fila ?dx) 8)
                   (>= (+ ?columna ?dy) 1) (<= (+ ?columna ?dy) 8))
              then
              (bind ?x (+ ?fila ?dx))
              (bind ?y (+ ?columna ?dy))
              
-             ; Verificar casilla adyacente
+             ; Egiaztatu alboko gelaxka
              (bind ?casillas (find-fact ((?c casilla))
-                                      (and (eq ?c:fila ?x)
+                                        (and (eq ?c:fila ?x)
                                            (eq ?c:columna ?y))))
              
              (if (and (> (length$ ?casillas) 0)
                      (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
                  then
-                 ; Hay una ficha opuesta adyacente, recopilar todas las fichas a voltear
+                 ; Alboko aurkako fitxa bat dago, iraultzeko fitxa guztiak bildu
                  (bind ?to-flip (create$))
-                 (bind ?to-flip (create$ ?to-flip (nth$ 1 ?casillas)))  ; Añadir la primera ficha opuesta
+                 (bind ?to-flip (create$ ?to-flip (nth$ 1 ?casillas)))  ; Gehitu lehen aurkako fitxa
                  
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
                  (bind ?valid-direction FALSE)
                  
-                 ; Seguir en esta dirección buscando fichas a voltear
+                 ; Norabide honetan jarraitu iraultzeko fitxak bilatzen
                  (while (and (>= ?x 1) (<= ?x 8) (>= ?y 1) (<= ?y 8))
                     (bind ?casillas (find-fact ((?c casilla))
-                                            (and (eq ?c:fila ?x)
+                                             (and (eq ?c:fila ?x)
                                                  (eq ?c:columna ?y))))
                     
                     (if (> (length$ ?casillas) 0)
@@ -391,22 +391,22 @@
                         
                         (if (eq ?estado-actual ?estado)
                             then
-                            ; Encontramos una ficha del mismo color, flanqueo verificado
+                            ; Kolore bereko fitxa bat aurkitu dugu, inguraketa egiaztatuta
                             (bind ?valid-direction TRUE)
                             (break))
                         
                         (if (eq ?estado-actual vacia)
                             then
-                            ; Espacio vacío, no hay flanqueo
+                            ; Espazio hutsa, ez dago inguraketarik
                             (break))
                         
-                        ; Si es una ficha opuesta, añadirla a las que se voltearán
+                        ; Aurkako fitxa bada, gehitu irauliko diren fitxei
                         (bind ?to-flip (create$ ?to-flip ?current-cell))
                         (bind ?x (+ ?x ?dx))
                         (bind ?y (+ ?y ?dy)))
-                 )
+                    )
                  
-                 ; Si la dirección es válida, voltear todas las fichas recopiladas
+                 ; Norabidea balioduna bada, bildutako fitxa guztiak irauli
                  (if ?valid-direction
                      then
                      (foreach ?piece ?to-flip
@@ -420,7 +420,7 @@
       )
    )
    
-   ; Actualizar los contadores de fichas tras el volteo
+   ; Fitxen kontagailuak eguneratu iraulketaren ondoren
    (if (> ?total-flipped 0)
        then
        (bind ?f-player (nth$ 1 (find-fact ((?f fichas-disponibles)) 
@@ -432,25 +432,24 @@
        (modify ?f-opponent (cantidad (+ (fact-slot-value ?f-opponent cantidad) ?total-flipped)))
    )
    
-   ; Cambiar el turno
+   ; Txanda aldatu
    (modify ?tablero (turno (if (eq ?turno-actual negro) then blanco else negro)))
 
    
-   ; Mensaje de confirmación
-   (printout t "Pieza añadida en (" ?fila ", " ?columna ") con color: " ?estado crlf)
-   (printout t "Fichas volteadas: " ?total-flipped crlf)
+   ; Berrespen mezua
+   (printout t "Pieza gehituta (" ?fila ", " ?columna ") kokalekuan, kolorea: " ?estado crlf)
+   (printout t "Iraulitako fitxak: " ?total-flipped crlf)
    
-   ; Mostrar el tablero actualizado
+   ; Taula eguneratua erakutsi
    (assert (visualizar (mostrar si)))
    
    (run)
    
-   ; Mostrar movimientos del siguiente jugador solo si no es auto-white
-
+   ; Hurrengo jokalariaren mugimenduak erakutsi soilik auto-white ez bada
       (bind ?siguiente-turno (if (eq ?estado negra) then blanca else negra))
       (if (eq ?siguiente-turno negra)
          then 
-         (printout t crlf ">>> Turno de NEGRAS:" crlf)
+         (printout t crlf ">>> BELTZEN txanda:" crlf)
          (mostrar-movimientos-disponibles negra))
    
    (return TRUE)
@@ -476,14 +475,14 @@
    (bind ?is-edge (and (not ?is-corner)
       (or (eq ?fila 1) (eq ?fila 8)
           (eq ?columna 1) (eq ?columna 8))))
-         ; Print statements for corner and edge detection only if recursive is true
+          ; Izkin eta ertzen detekziorako inprimatze-adierazpenak soilik recursivo TRUE bada
          (if ?recursivo then
             (if ?is-corner then
-                (printout t "Bonus: esquina en (" ?fila "," ?columna ")!" crlf))
+                (printout t "Bonusa: izkina (" ?fila "," ?columna ") kokalekuan!" crlf))
             (if ?is-edge then
-                (printout t "Bonus: borde en (" ?fila "," ?columna ")!" crlf)))
+                 (printout t "Bonusa: ertza (" ?fila "," ?columna ") kokalekuan!" crlf)))
 
-   ; Only make recursive call if recursivo is true
+   ; Deialdi errekurtsiboa egin soilik recursivo TRUE bada
    (if ?recursivo then
       (bind ?opponent-estado (if (eq ?estado negra) then blanca else negra))
       (bind ?opponent-flips (calcular-volteos ?fila ?columna ?opponent-estado FALSE))
@@ -507,8 +506,8 @@
              
              (if (and (> (length$ ?casillas) 0)
                      (eq (fact-slot-value (nth$ 1 ?casillas) estado) ?opposite))
-                 then
-                 (bind ?flipped 1)  ; Start counting from the first opposite piece
+                then
+                 (bind ?flipped 1)  ; Zenbaketa lehen aurkako piezatik hasi
                  (bind ?x (+ ?x ?dx))
                  (bind ?y (+ ?y ?dy))
                  
@@ -525,20 +524,20 @@
                             (bind ?total-flipped (+ ?total-flipped ?flipped))
                             (if ?is-corner then
                                     (bind ?total-flipped (+ ?total-flipped 5))
-                              else 
+                               else 
                                     (if ?is-edge then
                                        (bind ?total-flipped (+ ?total-flipped 2))))
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
-                            (bind ?flipped 0)  ; Reset if we hit an empty space
+                            (bind ?flipped 0)  ; Berrezarri espazio huts bat jotzen badugu
                             (break))
-                        ; Check if current piece to be flipped is on border
+                        ; Egiaztatu iraultzeko uneko pieza ertzean dagoen
                         (if (or (= ?x 1) (= ?x 8) (= ?y 1) (= ?y 8))
                             then
-                            (bind ?flipped (+ ?flipped 1.5))  ; Border pieces count as 1.5
+                             (bind ?flipped (+ ?flipped 1.5))  ; Ertzetako piezek 1.5 balio dute
                             else
-                            (bind ?flipped (+ ?flipped 1)))   ; Normal pieces count as 1
+                            (bind ?flipped (+ ?flipped 1)))   ; Pieza normalek 1 balio dute
                         (bind ?x (+ ?x ?dx))
                         (bind ?y (+ ?y ?dy)))
                  )
@@ -549,16 +548,16 @@
    (return ?total-flipped)
 )
 
-;SI NO TIENES MOVIMIENTOS HAY QUE HACER QUE EL NEGRO VEAS las suyas
+; MUGIMENDURIK EZ BADUZU BELTZAK BEREAK IKUSI BEHAR DITU
 (defrule auto-white-move
    (declare (salience 50))
    (auto-white on)
    (tablero (turno blanco))
    =>
-   (printout t "Auto-white mode: analizando movimientos disponibles..." crlf)
+   (printout t "Auto-white modua: eskuragarri dauden mugimenduak aztertzen..." crlf)
    (bind ?found FALSE)
    (bind ?max-flips 0)
-   (bind ?best-moves (create$))  ; List to store all moves with max flips
+   (bind ?best-moves (create$))  ; Iraulketa gehien dituzten mugimendu guztiak gordetzeko zerrenda
    
     (bind ?has-moves FALSE)
    (loop-for-count (?fila 1 8) do
@@ -568,32 +567,32 @@
              (bind ?has-moves TRUE)
              (break))))
    
-   ; If no moves available, call mostrar-movimientos-disponibles to handle the skip
+   ; Mugimendurik ez badago, deitu mostrar-movimientos-disponibles jauzia kudeatzeko
    (if (not ?has-moves)
        then
-       (printout t "Auto-white no tiene movimientos disponibles." crlf)
+       (printout t "Auto-whitek ez du mugimendu erabilgarririk." crlf)
        (mostrar-movimientos-disponibles blanca)
        (return))
 
 
-   ; Find all possible moves and track the best ones
+   ; Mugimendu posible guztiak aurkitu eta onenak jarraitu
    (loop-for-count (?fila 1 8) do
       (loop-for-count (?columna 1 8) do
           (if (mugimendu_egokia ?fila ?columna blanca)
              then
              (bind ?flips (calcular-volteos ?fila ?columna blanca TRUE))
-             (printout t "Posición (" ?fila "," ?columna ") tendria " ?flips " puntos para ser elegido" crlf)
+             (printout t "Posizioa (" ?fila "," ?columna ") aukeratua izateko " ?flips " puntu izango lituzke" crlf)
              
-             ; If we found a better move, clear the list and start new
+             ; Mugimendu hobea aurkitu badugu, zerrenda garbitu eta berria hasi
              (if (> ?flips ?max-flips)
                  then
                  (bind ?found TRUE)
                  (bind ?max-flips ?flips)
                  (bind ?best-moves (create$ (create$ ?fila ?columna ?flips)))
              else 
-                 ; If we found an equally good move, add it to the list
+                 ; Berdin ona den mugimendu bat aurkitu badugu, gehitu zerrendara
                  (if (and ?found (= ?flips ?max-flips))
-                     then
+                      then
                      (bind ?best-moves (create$ ?best-moves (create$ ?fila ?columna ?flips)))))
          )
       )
@@ -601,8 +600,8 @@
    
    (if ?found
        then
-       ; Calculate number of moves (each move is 3 elements: fila, columna, flips)
-       (bind ?num-moves (div (length$ ?best-moves) 3))  ; Use div instead of / for integer division
+       ; Mugimendu kopurua kalkulatu (mugimendu bakoitza 3 elementu dira: fila, columna, flips)
+       (bind ?num-moves (div (length$ ?best-moves) 3))  ; Erabili div / ordez zatiketa osorako
        (bind ?random-index (random 1 ?num-moves))
        (bind ?selected-move (subseq$ ?best-moves (+ (* (- ?random-index 1) 3) 1) (* ?random-index 3)))
        (bind ?best-fila (nth$ 1 ?selected-move))
@@ -617,19 +616,19 @@
           (or (eq ?best-fila 1) (eq ?best-fila 8)
               (eq ?best-columna 1) (eq ?best-columna 8))))
               
-       (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna 
-                 ") con " ?max-flips " punto" crlf)
+       (printout t "Auto-whitek fitxa zuria (" ?best-fila "," ?best-columna 
+                 ") kokalekuan jartzen du " ?max-flips " punturekin" crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
 
 
 (deffunction jugar (?fila ?columna)
-   ; Función simplificada para facilitar el juego
+   ; Jolastea errazteko funtzio sinplifikatua
    (bind ?tablero (nth$ 1 (find-fact ((?t tablero)) TRUE)))
    (bind ?turno-actual (fact-slot-value ?tablero turno))
    (bind ?color-turno (if (eq ?turno-actual negro) then negra else blanca))
    
-   ; Realizar el movimiento con el color del turno actual
+   ; Egin mugimendua uneko txandaren kolorearekin
    (AP ?fila ?columna ?color-turno)
 )
