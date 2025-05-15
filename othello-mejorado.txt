@@ -53,7 +53,7 @@
    =>
    (assert (fichas-disponibles (jugador negro) (cantidad 30)))
    (assert (fichas-disponibles (jugador blanco) (cantidad 30)))
-   (assert (mensaje (texto "Fichas inicializadas. Cada jugador tiene 30 fichas disponibles."))))
+   (assert (mensaje (texto "Fichas inicializadas."))))
 
 ; Regla para crear casillas vacías
 (defrule crear-casillas-vacias
@@ -95,8 +95,6 @@
    =>
 
    (printout t crlf)
-   (printout t "Estado del tablero:" crlf)
-   (printout t "Turno: " ?turno crlf)
    (printout t "  ") 
    (printout t crlf)
    (printout t "     1     2    3    4    5    6    7     8" crlf)
@@ -462,7 +460,10 @@
    (AP ?fila ?columna negra)
 )
 
-(deffunction calcular-volteos (?fila ?columna ?estado)
+
+
+
+(deffunction calcular-volteos (?fila ?columna ?estado ?recursivo)
    (bind ?opposite (if (eq ?estado negra) then blanca else negra))
    (bind ?total-flipped 0)
    
@@ -475,7 +476,22 @@
    (bind ?is-edge (and (not ?is-corner)
       (or (eq ?fila 1) (eq ?fila 8)
           (eq ?columna 1) (eq ?columna 8))))
+         ; Print statements for corner and edge detection only if recursive is true
+         (if ?recursivo then
+            (if ?is-corner then
+                (printout t "Bonus: esquina en  (" ?fila "," ?columna ")!" crlf))
+            (if ?is-edge then
+                (printout t "Bonus: borde en    (" ?fila "," ?columna ")!" crlf)))
 
+   ; Only make recursive call if recursivo is true
+   (if ?recursivo then
+      (bind ?opponent-estado (if (eq ?estado negra) then blanca else negra))
+      (bind ?opponent-flips (calcular-volteos ?fila ?columna ?opponent-estado FALSE))
+      (if (>= ?opponent-flips 4) then
+         (printout t "AAk beltzen posizio estrategiko bat hartu du!" crlf)
+         (bind ?total-flipped (+ ?total-flipped 2))
+      )
+   )
 
    (loop-for-count (?dx -1 1) do
       (loop-for-count (?dy -1 1) do
@@ -501,7 +517,7 @@
                                             (and (eq ?c:fila ?x)
                                                  (eq ?c:columna ?y))))
                     
-                    (if (> (length$ ?casillas) 0)
+                     (if (> (length$ ?casillas) 0)
                         then
                         (bind ?estado-actual (fact-slot-value (nth$ 1 ?casillas) estado))
                         (if (eq ?estado-actual ?estado)
@@ -512,13 +528,17 @@
                               else 
                                     (if ?is-edge then
                                        (bind ?total-flipped (+ ?total-flipped 2))))
-
                             (break))
                         (if (eq ?estado-actual vacia)
                             then
                             (bind ?flipped 0)  ; Reset if we hit an empty space
                             (break))
-                        (bind ?flipped (+ ?flipped 1))
+                        ; Check if current piece to be flipped is on border
+                        (if (or (= ?x 1) (= ?x 8) (= ?y 1) (= ?y 8))
+                            then
+                            (bind ?flipped (+ ?flipped 1.5))  ; Border pieces count as 1.5
+                            else
+                            (bind ?flipped (+ ?flipped 1)))   ; Normal pieces count as 1
                         (bind ?x (+ ?x ?dx))
                         (bind ?y (+ ?y ?dy)))
                  )
@@ -529,7 +549,7 @@
    (return ?total-flipped)
 )
 
-;SI NO TIENES MOVIMIENTOS HAY QUE HACER QUE EL NEGEO VEAS las suyas
+;SI NO TIENES MOVIMIENTOS HAY QUE HACER QUE EL NEGRO VEAS las suyas
 (defrule auto-white-move
    (declare (salience 50))
    (auto-white on)
@@ -561,7 +581,7 @@
       (loop-for-count (?columna 1 8) do
           (if (mugimendu_egokia ?fila ?columna blanca)
              then
-             (bind ?flips (calcular-volteos ?fila ?columna blanca))
+             (bind ?flips (calcular-volteos ?fila ?columna blanca TRUE))
              (printout t "Posición (" ?fila "," ?columna ") tendria " ?flips " puntos para ser elegido" crlf)
              
              ; If we found a better move, clear the list and start new
@@ -598,9 +618,7 @@
               (eq ?best-columna 1) (eq ?best-columna 8))))
               
        (printout t "Auto-white coloca ficha blanca en (" ?best-fila "," ?best-columna 
-                 ") volteando " ?max-flips " fichas" 
-                 (if ?is-corner then " ESQUINA" 
-                  else (if ?is-edge then " BORDE" else "")) crlf)
+                 ") con " ?max-flips " punto" crlf)
        (AP ?best-fila ?best-columna blanca)
    )
 )
